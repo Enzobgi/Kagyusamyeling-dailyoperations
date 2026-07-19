@@ -2,10 +2,13 @@ const today = new Date();
 const isoDate = dateToInput(today);
 const TRUE_DATA_KEY = "samye-ling-room-data-v2";
 const DATA_MODE_KEY = "samye-ling-room-mode-v2";
+const SYNC_CONFIG_KEY = "samye-ling-room-sync-config-v1";
 const stayStatuses = ["confirmed", "checked-in", "checked-out", "cancelled"];
 
 let dataMode = localStorage.getItem(DATA_MODE_KEY) || "true";
 let state = dataMode === "demo" ? createDemoData() : loadTrueData();
+let syncConfig = loadSyncConfig();
+let syncTimer = null;
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -13,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   hydrateControls();
   bindEvents();
   render();
+  if (syncConfig.enabled && syncReady()) {
+    loadCloudData();
+  }
 });
 
 function createDemoData() {
@@ -84,6 +90,16 @@ function loadTrueData() {
 function persistTrueData() {
   if (dataMode === "true") {
     localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(state));
+    scheduleCloudSave();
+  }
+}
+
+function loadSyncConfig() {
+  try {
+    const saved = localStorage.getItem(SYNC_CONFIG_KEY);
+    return saved ? JSON.parse(saved) : { url: "", key: "", record: "main", enabled: false };
+  } catch {
+    return { url: "", key: "", record: "main", enabled: false };
   }
 }
 
@@ -96,7 +112,8 @@ function cacheElements() {
     "stayNotes", "stayFeedback", "clearStay", "roomForm", "roomId", "roomName", "roomBeds",
     "roomType", "roomArea", "roomBathroom", "roomActive", "roomNotes", "roomFeedback",
     "clearRoom", "exportData", "importData", "resetTrueData", "importDataFile", "dataFeedback",
-    "dataSummary"
+    "dataSummary", "syncForm", "syncUrl", "syncKey", "syncRecord", "syncEnabled", "loadCloud",
+    "saveCloud", "syncFeedback"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
@@ -107,6 +124,7 @@ function hydrateControls() {
   if (!els.checkIn.value) els.checkIn.value = els.activeDate.value;
   if (!els.checkOut.value) els.checkOut.value = addDays(els.activeDate.value, 1);
   fillSelect(els.stayRoom, state.rooms.filter((roomItem) => roomItem.active).map((roomItem) => [roomItem.id, roomLabel(roomItem)]));
+  hydrateSyncControls();
   updateModeButtons();
 }
 
@@ -126,6 +144,9 @@ function bindEvents() {
   els.importData.addEventListener("click", () => els.importDataFile.click());
   els.importDataFile.addEventListener("change", importTrueData);
   els.resetTrueData.addEventListener("click", resetTrueData);
+  els.syncForm.addEventListener("submit", saveSyncSettings);
+  els.loadCloud.addEventListener("click", loadCloudData);
+  els.saveCloud.addEventListener("click", () => saveCloudData(true));
 }
 
 function render() {
@@ -246,13 +267,112 @@ function renderDataSummary() {
   [
     ["Rooms", `${state.rooms.length} total, ${activeRooms().length} bookable`],
     ["Stays", `${state.stays.length} saved stays`],
-    ["Storage", dataMode === "true" ? "True data changes are saved in this browser" : "Demo data is fictive and view-only"]
+    ["Storage", dataMode === "true" ? "True data changes are saved in this browser" : "Demo data is fictive and view-only"],
+    ["Cloud sync", syncReady() && syncConfig.enabled ? `On (${syncConfig.record || "main"})` : "Off"]
   ].forEach(([title, body]) => {
     const card = document.createElement("article");
     card.className = "report-card";
     card.innerHTML = `<strong>${escapeHtml(title)}</strong><p class="muted">${escapeHtml(body)}</p>`;
-    els.dataSummary.append(card);
+  els.dataSummary.append(card);
   });
+}
+
+function hydrateSyncControls() {
+  els.syncUrl.value = syncConfig.url || "";
+  els.syncKey.value = syncConfig.key || "";
+  els.syncRecord.value = syncConfig.record || "main";
+  els.syncEnabled.checked = Boolean(syncConfig.enabled);
+}
+
+function saveSyncSettings(event) {
+  event.preventDefault();
+  syncConfig = {
+    url: els.syncUrl.value.trim().replace(/\/$/, ""),
+    key: els.syncKey.value.trim(),
+    record: els.syncRecord.value.trim() || "main",
+    enabled: els.syncEnabled.checked
+  };
+  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig));
+  els.syncFeedback.textContent = syncReady() ? "Sync settings saved. Use Load cloud or Save cloud to choose the first direction." : "Add a Supabase URL and anon key to enable cloud sync.";
+  renderDataSummary();
+}
+
+async function loadCloudData() {
+  if (!syncReady()) {
+    els.syncFeedback.textContent = "Add Supabase URL and anon key first.";
+    return;
+  }
+  try {
+    const response = await fetch(syncEndpoint(), {
+      headers: syncHeaders()
+    });
+    if (!response.ok) throw new Error(`Load failed (${response.status})`);
+    const rows = await response.json();
+    if (!rows.length) {
+      els.syncFeedback.textContent = "No cloud record yet. Save cloud once from this device to create it.";
+      return;
+    }
+    state = normalizeData(rows[0].data);
+    dataMode = "true";
+    localStorage.setItem(DATA_MODE_KEY, "true");
+    localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(state));
+    render();
+    els.syncFeedback.textContent = `Loaded cloud data from ${syncConfig.record || "main"}.`;
+  } catch (error) {
+    els.syncFeedback.textContent = error.message || "Cloud load failed.";
+  }
+}
+
+async function saveCloudData(showMessage = false) {
+  if (dataMode !== "true" || !syncReady()) {
+    if (showMessage) els.syncFeedback.textContent = "Switch to True data and save sync settings first.";
+    return;
+  }
+  try {
+    const payload = {
+      id: syncConfig.record || "main",
+      data: normalizeData(state),
+      updated_at: new Date().toISOString()
+    };
+    const response = await fetch(`${syncBaseUrl()}?on_conflict=id`, {
+      method: "POST",
+      headers: {
+        ...syncHeaders(),
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(`Save failed (${response.status})`);
+    els.syncFeedback.textContent = `Cloud saved at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
+  } catch (error) {
+    els.syncFeedback.textContent = error.message || "Cloud save failed.";
+  }
+}
+
+function scheduleCloudSave() {
+  if (!syncConfig.enabled || !syncReady()) return;
+  window.clearTimeout(syncTimer);
+  syncTimer = window.setTimeout(() => saveCloudData(false), 900);
+}
+
+function syncReady() {
+  return Boolean(syncConfig.url && syncConfig.key && syncConfig.record);
+}
+
+function syncBaseUrl() {
+  return `${syncConfig.url}/rest/v1/room_data`;
+}
+
+function syncEndpoint() {
+  return `${syncBaseUrl()}?id=eq.${encodeURIComponent(syncConfig.record || "main")}&select=data,updated_at`;
+}
+
+function syncHeaders() {
+  return {
+    apikey: syncConfig.key,
+    Authorization: `Bearer ${syncConfig.key}`
+  };
 }
 
 function saveRoom(event) {
