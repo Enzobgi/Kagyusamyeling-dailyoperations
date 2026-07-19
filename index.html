@@ -269,6 +269,31 @@
             </form>
             <div id="syncFeedback" class="form-feedback" aria-live="polite"></div>
           </section>
+
+          <section aria-labelledby="accountTitle">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Account</p>
+                <h2 id="accountTitle">User Account</h2>
+              </div>
+            </div>
+            <form id="accountForm" class="form-grid">
+              <label class="field">
+                <span>Email</span>
+                <input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com">
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input id="accountPassword" type="password" autocomplete="current-password" placeholder="Password">
+              </label>
+              <div class="data-actions">
+                <button id="signIn" type="submit">Sign in</button>
+                <button id="signUp" class="secondary-action" type="button">Create account</button>
+                <button id="signOut" class="secondary-action" type="button">Sign out</button>
+              </div>
+            </form>
+            <div id="accountFeedback" class="form-feedback" aria-live="polite"></div>
+          </section>
         </aside>
       </section>
     </main>

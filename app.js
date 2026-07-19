@@ -3,11 +3,13 @@ const isoDate = dateToInput(today);
 const TRUE_DATA_KEY = "samye-ling-room-data-v2";
 const DATA_MODE_KEY = "samye-ling-room-mode-v2";
 const SYNC_CONFIG_KEY = "samye-ling-room-sync-config-v1";
+const AUTH_SESSION_KEY = "samye-ling-auth-session-v1";
 const stayStatuses = ["confirmed", "checked-in", "checked-out", "cancelled"];
 
 let dataMode = localStorage.getItem(DATA_MODE_KEY) || "true";
 let state = dataMode === "demo" ? createDemoData() : loadTrueData();
 let syncConfig = loadSyncConfig();
+let authSession = loadAuthSession();
 let syncTimer = null;
 const els = {};
 
@@ -103,6 +105,21 @@ function loadSyncConfig() {
   }
 }
 
+function loadAuthSession() {
+  try {
+    const saved = localStorage.getItem(AUTH_SESSION_KEY);
+    if (!saved) return null;
+    const session = JSON.parse(saved);
+    if (session.expires_at && session.expires_at * 1000 < Date.now()) {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
 function cacheElements() {
   [
     "activeDate", "demoMode", "trueDataMode", "dataModeLabel", "roomCount", "occupiedCount",
@@ -113,7 +130,8 @@ function cacheElements() {
     "roomType", "roomArea", "roomBathroom", "roomActive", "roomNotes", "roomFeedback",
     "clearRoom", "exportData", "importData", "resetTrueData", "importDataFile", "dataFeedback",
     "dataSummary", "syncForm", "syncUrl", "syncKey", "syncRecord", "syncEnabled", "loadCloud",
-    "saveCloud", "syncFeedback"
+    "saveCloud", "syncFeedback", "accountForm", "accountEmail", "accountPassword", "signIn",
+    "signUp", "signOut", "accountFeedback"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
@@ -125,6 +143,7 @@ function hydrateControls() {
   if (!els.checkOut.value) els.checkOut.value = addDays(els.activeDate.value, 1);
   fillSelect(els.stayRoom, state.rooms.filter((roomItem) => roomItem.active).map((roomItem) => [roomItem.id, roomLabel(roomItem)]));
   hydrateSyncControls();
+  hydrateAccountControls();
   updateModeButtons();
 }
 
@@ -147,6 +166,9 @@ function bindEvents() {
   els.syncForm.addEventListener("submit", saveSyncSettings);
   els.loadCloud.addEventListener("click", loadCloudData);
   els.saveCloud.addEventListener("click", () => saveCloudData(true));
+  els.accountForm.addEventListener("submit", signInWithEmail);
+  els.signUp.addEventListener("click", signUpWithEmail);
+  els.signOut.addEventListener("click", signOut);
 }
 
 function render() {
@@ -268,7 +290,8 @@ function renderDataSummary() {
     ["Rooms", `${state.rooms.length} total, ${activeRooms().length} bookable`],
     ["Stays", `${state.stays.length} saved stays`],
     ["Storage", dataMode === "true" ? "True data changes are saved in this browser" : "Demo data is fictive and view-only"],
-    ["Cloud sync", syncReady() && syncConfig.enabled ? `On (${syncConfig.record || "main"})` : "Off"]
+    ["Cloud sync", syncReady() && syncConfig.enabled ? `On (${cloudRecordId()})` : "Off"],
+    ["Account", authSession?.user?.email || "Not signed in"]
   ].forEach(([title, body]) => {
     const card = document.createElement("article");
     card.className = "report-card";
@@ -284,6 +307,12 @@ function hydrateSyncControls() {
   els.syncEnabled.checked = Boolean(syncConfig.enabled);
 }
 
+function hydrateAccountControls() {
+  els.accountEmail.value = authSession?.user?.email || els.accountEmail.value || "";
+  els.signOut.disabled = !authSession;
+  els.accountFeedback.textContent = authSession?.user?.email ? `Signed in as ${authSession.user.email}.` : "Sign in to sync private room data across devices.";
+}
+
 function saveSyncSettings(event) {
   event.preventDefault();
   syncConfig = {
@@ -293,13 +322,17 @@ function saveSyncSettings(event) {
     enabled: els.syncEnabled.checked
   };
   localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig));
-  els.syncFeedback.textContent = syncReady() ? "Sync settings saved. Use Load cloud or Save cloud to choose the first direction." : "Add a Supabase URL and anon key to enable cloud sync.";
+  els.syncFeedback.textContent = syncReady() ? "Sync settings saved. Sign in, then use Load cloud or Save cloud." : "Add a Supabase URL and anon key to enable cloud sync.";
   renderDataSummary();
 }
 
 async function loadCloudData() {
   if (!syncReady()) {
     els.syncFeedback.textContent = "Add Supabase URL and anon key first.";
+    return;
+  }
+  if (!authSession) {
+    els.syncFeedback.textContent = "Sign in before loading cloud data.";
     return;
   }
   try {
@@ -317,7 +350,7 @@ async function loadCloudData() {
     localStorage.setItem(DATA_MODE_KEY, "true");
     localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(state));
     render();
-    els.syncFeedback.textContent = `Loaded cloud data from ${syncConfig.record || "main"}.`;
+    els.syncFeedback.textContent = `Loaded cloud data for ${authSession.user.email}.`;
   } catch (error) {
     els.syncFeedback.textContent = error.message || "Cloud load failed.";
   }
@@ -328,10 +361,15 @@ async function saveCloudData(showMessage = false) {
     if (showMessage) els.syncFeedback.textContent = "Switch to True data and save sync settings first.";
     return;
   }
+  if (!authSession) {
+    if (showMessage) els.syncFeedback.textContent = "Sign in before saving cloud data.";
+    return;
+  }
   try {
     const payload = {
-      id: syncConfig.record || "main",
+      id: cloudRecordId(),
       data: normalizeData(state),
+      user_id: authSession?.user?.id || null,
       updated_at: new Date().toISOString()
     };
     const response = await fetch(`${syncBaseUrl()}?on_conflict=id`, {
@@ -360,19 +398,105 @@ function syncReady() {
   return Boolean(syncConfig.url && syncConfig.key && syncConfig.record);
 }
 
+function cloudRecordId() {
+  const record = syncConfig.record || "main";
+  return authSession?.user?.id ? `${authSession.user.id}:${record}` : record;
+}
+
 function syncBaseUrl() {
   return `${syncConfig.url}/rest/v1/room_data`;
 }
 
 function syncEndpoint() {
-  return `${syncBaseUrl()}?id=eq.${encodeURIComponent(syncConfig.record || "main")}&select=data,updated_at`;
+  return `${syncBaseUrl()}?id=eq.${encodeURIComponent(cloudRecordId())}&select=data,updated_at`;
 }
 
 function syncHeaders() {
+  const token = authSession?.access_token || syncConfig.key;
   return {
     apikey: syncConfig.key,
-    Authorization: `Bearer ${syncConfig.key}`
+    Authorization: `Bearer ${token}`
   };
+}
+
+async function signInWithEmail(event) {
+  event.preventDefault();
+  if (!syncReady()) {
+    els.accountFeedback.textContent = "Add Supabase URL and anon key in Cloud Sync first.";
+    return;
+  }
+  const email = els.accountEmail.value.trim();
+  const password = els.accountPassword.value;
+  if (!email || !password) {
+    els.accountFeedback.textContent = "Email and password are required.";
+    return;
+  }
+  try {
+    const session = await authRequest("token?grant_type=password", { email, password });
+    setAuthSession(session);
+    els.accountPassword.value = "";
+    els.accountFeedback.textContent = `Signed in as ${session.user.email}.`;
+    if (syncConfig.enabled) await loadCloudData();
+    render();
+  } catch (error) {
+    els.accountFeedback.textContent = error.message || "Sign in failed.";
+  }
+}
+
+async function signUpWithEmail() {
+  if (!syncReady()) {
+    els.accountFeedback.textContent = "Add Supabase URL and anon key in Cloud Sync first.";
+    return;
+  }
+  const email = els.accountEmail.value.trim();
+  const password = els.accountPassword.value;
+  if (!email || !password) {
+    els.accountFeedback.textContent = "Email and password are required.";
+    return;
+  }
+  try {
+    const session = await authRequest("signup", { email, password });
+    if (session.access_token) {
+      setAuthSession(session);
+      els.accountPassword.value = "";
+      els.accountFeedback.textContent = `Account created for ${session.user.email}.`;
+      if (syncConfig.enabled) await saveCloudData(false);
+    } else {
+      els.accountFeedback.textContent = "Account created. Check email if confirmation is required, then sign in.";
+    }
+    render();
+  } catch (error) {
+    els.accountFeedback.textContent = error.message || "Create account failed.";
+  }
+}
+
+function signOut() {
+  authSession = null;
+  localStorage.removeItem(AUTH_SESSION_KEY);
+  els.accountPassword.value = "";
+  els.accountFeedback.textContent = "Signed out.";
+  render();
+}
+
+function setAuthSession(session) {
+  authSession = session;
+  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+}
+
+async function authRequest(path, body) {
+  const response = await fetch(`${syncConfig.url}/auth/v1/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: syncConfig.key,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.error_description || result.msg || result.message || `Auth failed (${response.status})`);
+  }
+  return result;
 }
 
 function saveRoom(event) {
