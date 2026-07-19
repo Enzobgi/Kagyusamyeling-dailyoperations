@@ -2,15 +2,13 @@ const today = new Date();
 const isoDate = dateToInput(today);
 const TRUE_DATA_KEY = "samye-ling-room-data-v2";
 const DATA_MODE_KEY = "samye-ling-room-mode-v2";
-const SYNC_CONFIG_KEY = "samye-ling-room-sync-config-v1";
-const AUTH_SESSION_KEY = "samye-ling-auth-session-v1";
+const AUTH_SESSION_KEY = "samye-ling-neon-auth-session-v1";
 const stayStatuses = ["confirmed", "checked-in", "checked-out", "cancelled"];
 
 let dataMode = localStorage.getItem(DATA_MODE_KEY) || "true";
 let state = dataMode === "demo" ? createDemoData() : loadTrueData();
-let syncConfig = loadSyncConfig();
 let authSession = loadAuthSession();
-let syncTimer = null;
+let sharedDataTimer = null;
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -18,8 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
   hydrateControls();
   bindEvents();
   render();
-  if (syncConfig.enabled && syncReady()) {
-    loadCloudData();
+  if (authSession) {
+    loadSharedData();
   }
 });
 
@@ -92,16 +90,7 @@ function loadTrueData() {
 function persistTrueData() {
   if (dataMode === "true") {
     localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(state));
-    scheduleCloudSave();
-  }
-}
-
-function loadSyncConfig() {
-  try {
-    const saved = localStorage.getItem(SYNC_CONFIG_KEY);
-    return saved ? JSON.parse(saved) : { url: "", key: "", record: "main", enabled: false };
-  } catch {
-    return { url: "", key: "", record: "main", enabled: false };
+    scheduleSharedDataSave();
   }
 }
 
@@ -129,8 +118,7 @@ function cacheElements() {
     "stayNotes", "stayFeedback", "clearStay", "roomForm", "roomId", "roomName", "roomBeds",
     "roomType", "roomArea", "roomBathroom", "roomActive", "roomNotes", "roomFeedback",
     "clearRoom", "exportData", "importData", "resetTrueData", "importDataFile", "dataFeedback",
-    "dataSummary", "syncForm", "syncUrl", "syncKey", "syncRecord", "syncEnabled", "loadCloud",
-    "saveCloud", "syncFeedback", "accountForm", "accountEmail", "accountPassword", "signIn",
+    "dataSummary", "accountForm", "accountEmail", "accountPassword", "signIn",
     "signUp", "signOut", "accountFeedback"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
@@ -143,7 +131,6 @@ function hydrateControls() {
   if (!els.checkIn.value) els.checkIn.value = els.activeDate.value;
   if (!els.checkOut.value) els.checkOut.value = addDays(els.activeDate.value, 1);
   fillSelect(els.stayRoom, state.rooms.filter((roomItem) => roomItem.active).map((roomItem) => [roomItem.id, roomLabel(roomItem)]));
-  hydrateSyncControls();
   hydrateAccountControls();
   updateModeButtons();
 }
@@ -166,9 +153,6 @@ function bindEvents() {
   els.importData.addEventListener("click", () => els.importDataFile.click());
   els.importDataFile.addEventListener("change", importTrueData);
   els.resetTrueData.addEventListener("click", resetTrueData);
-  els.syncForm.addEventListener("submit", saveSyncSettings);
-  els.loadCloud.addEventListener("click", loadCloudData);
-  els.saveCloud.addEventListener("click", () => saveCloudData(true));
   els.accountForm.addEventListener("submit", signInWithEmail);
   els.signUp.addEventListener("click", signUpWithEmail);
   els.signOut.addEventListener("click", signOut);
@@ -359,8 +343,8 @@ function renderDataSummary() {
   [
     ["Rooms", `${state.rooms.length} total, ${activeRooms().length} bookable`],
     ["Stays", `${state.stays.length} saved stays`],
-    ["Storage", dataMode === "true" ? "True data changes are saved in this browser" : "Demo data is fictive and view-only"],
-    ["Cloud sync", syncReady() && syncConfig.enabled ? `On (${cloudRecordId()})` : "Off"],
+    ["Storage", dataMode === "true" ? "True data changes are saved in this browser and synced when signed in" : "Demo data is fictive and view-only"],
+    ["Account sync", authSession ? "On" : "Sign in to sync"],
     ["Account", authSession?.user?.email || "Not signed in"]
   ].forEach(([title, body]) => {
     const card = document.createElement("article");
@@ -370,131 +354,77 @@ function renderDataSummary() {
   });
 }
 
-function hydrateSyncControls() {
-  els.syncUrl.value = syncConfig.url || "";
-  els.syncKey.value = syncConfig.key || "";
-  els.syncRecord.value = syncConfig.record || "main";
-  els.syncEnabled.checked = Boolean(syncConfig.enabled);
-}
-
 function hydrateAccountControls() {
   els.accountEmail.value = authSession?.user?.email || els.accountEmail.value || "";
   els.signOut.disabled = !authSession;
   els.accountFeedback.textContent = authSession?.user?.email ? `Signed in as ${authSession.user.email}.` : "Sign in to sync private room data across devices.";
 }
 
-function saveSyncSettings(event) {
-  event.preventDefault();
-  syncConfig = {
-    url: els.syncUrl.value.trim().replace(/\/$/, ""),
-    key: els.syncKey.value.trim(),
-    record: els.syncRecord.value.trim() || "main",
-    enabled: els.syncEnabled.checked
-  };
-  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig));
-  els.syncFeedback.textContent = syncReady() ? "Sync settings saved. Sign in, then use Load cloud or Save cloud." : "Add a Supabase URL and anon key to enable cloud sync.";
-  renderDataSummary();
-}
-
-async function loadCloudData() {
-  if (!syncReady()) {
-    els.syncFeedback.textContent = "Add Supabase URL and anon key first.";
-    return;
-  }
+async function loadSharedData() {
   if (!authSession) {
-    els.syncFeedback.textContent = "Sign in before loading cloud data.";
+    els.accountFeedback.textContent = "Sign in before loading shared data.";
     return;
   }
   try {
-    const response = await fetch(syncEndpoint(), {
-      headers: syncHeaders()
+    const response = await fetch("/api/data", {
+      headers: authHeaders()
     });
     if (!response.ok) throw new Error(`Load failed (${response.status})`);
-    const rows = await response.json();
-    if (!rows.length) {
-      els.syncFeedback.textContent = "No cloud record yet. Save cloud once from this device to create it.";
+    const result = await response.json();
+    if (!result.data) {
+      els.accountFeedback.textContent = "No shared data yet. Your next true-data change will create it.";
       return;
     }
-    state = normalizeData(rows[0].data);
+    state = normalizeData(result.data);
     dataMode = "true";
     localStorage.setItem(DATA_MODE_KEY, "true");
     localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(state));
     render();
-    els.syncFeedback.textContent = `Loaded cloud data for ${authSession.user.email}.`;
+    els.accountFeedback.textContent = `Loaded shared data for ${authSession.user.email}.`;
   } catch (error) {
-    els.syncFeedback.textContent = error.message || "Cloud load failed.";
+    els.accountFeedback.textContent = error.message || "Shared data load failed.";
   }
 }
 
-async function saveCloudData(showMessage = false) {
-  if (dataMode !== "true" || !syncReady()) {
-    if (showMessage) els.syncFeedback.textContent = "Switch to True data and save sync settings first.";
+async function saveSharedData(showMessage = false) {
+  if (dataMode !== "true") {
+    if (showMessage) els.accountFeedback.textContent = "Switch to True data before saving shared data.";
     return;
   }
   if (!authSession) {
-    if (showMessage) els.syncFeedback.textContent = "Sign in before saving cloud data.";
+    if (showMessage) els.accountFeedback.textContent = "Sign in before saving shared data.";
     return;
   }
   try {
-    const payload = {
-      id: cloudRecordId(),
-      data: normalizeData(state),
-      user_id: authSession?.user?.id || null,
-      updated_at: new Date().toISOString()
-    };
-    const response = await fetch(`${syncBaseUrl()}?on_conflict=id`, {
-      method: "POST",
+    const response = await fetch("/api/data", {
+      method: "PUT",
       headers: {
-        ...syncHeaders(),
-        "Content-Type": "application/json",
-        Prefer: "resolution=merge-duplicates"
+        ...authHeaders(),
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ data: normalizeData(state) })
     });
     if (!response.ok) throw new Error(`Save failed (${response.status})`);
-    els.syncFeedback.textContent = `Cloud saved at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
+    els.accountFeedback.textContent = `Shared data saved at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
   } catch (error) {
-    els.syncFeedback.textContent = error.message || "Cloud save failed.";
+    els.accountFeedback.textContent = error.message || "Shared data save failed.";
   }
 }
 
-function scheduleCloudSave() {
-  if (!syncConfig.enabled || !syncReady()) return;
-  window.clearTimeout(syncTimer);
-  syncTimer = window.setTimeout(() => saveCloudData(false), 900);
+function scheduleSharedDataSave() {
+  if (!authSession) return;
+  window.clearTimeout(sharedDataTimer);
+  sharedDataTimer = window.setTimeout(() => saveSharedData(false), 900);
 }
 
-function syncReady() {
-  return Boolean(syncConfig.url && syncConfig.key && syncConfig.record);
-}
-
-function cloudRecordId() {
-  const record = syncConfig.record || "main";
-  return authSession?.user?.id ? `${authSession.user.id}:${record}` : record;
-}
-
-function syncBaseUrl() {
-  return `${syncConfig.url}/rest/v1/room_data`;
-}
-
-function syncEndpoint() {
-  return `${syncBaseUrl()}?id=eq.${encodeURIComponent(cloudRecordId())}&select=data,updated_at`;
-}
-
-function syncHeaders() {
-  const token = authSession?.access_token || syncConfig.key;
+function authHeaders() {
   return {
-    apikey: syncConfig.key,
-    Authorization: `Bearer ${token}`
+    Authorization: `Bearer ${authSession.token}`
   };
 }
 
 async function signInWithEmail(event) {
   event.preventDefault();
-  if (!syncReady()) {
-    els.accountFeedback.textContent = "Add Supabase URL and anon key in Cloud Sync first.";
-    return;
-  }
   const email = els.accountEmail.value.trim();
   const password = els.accountPassword.value;
   if (!email || !password) {
@@ -502,11 +432,11 @@ async function signInWithEmail(event) {
     return;
   }
   try {
-    const session = await authRequest("token?grant_type=password", { email, password });
+    const session = await authRequest("signin", { email, password });
     setAuthSession(session);
     els.accountPassword.value = "";
     els.accountFeedback.textContent = `Signed in as ${session.user.email}.`;
-    if (syncConfig.enabled) await loadCloudData();
+    await loadSharedData();
     render();
   } catch (error) {
     els.accountFeedback.textContent = error.message || "Sign in failed.";
@@ -514,10 +444,6 @@ async function signInWithEmail(event) {
 }
 
 async function signUpWithEmail() {
-  if (!syncReady()) {
-    els.accountFeedback.textContent = "Add Supabase URL and anon key in Cloud Sync first.";
-    return;
-  }
   const email = els.accountEmail.value.trim();
   const password = els.accountPassword.value;
   if (!email || !password) {
@@ -526,14 +452,10 @@ async function signUpWithEmail() {
   }
   try {
     const session = await authRequest("signup", { email, password });
-    if (session.access_token) {
-      setAuthSession(session);
-      els.accountPassword.value = "";
-      els.accountFeedback.textContent = `Account created for ${session.user.email}.`;
-      if (syncConfig.enabled) await saveCloudData(false);
-    } else {
-      els.accountFeedback.textContent = "Account created. Check email if confirmation is required, then sign in.";
-    }
+    setAuthSession(session);
+    els.accountPassword.value = "";
+    els.accountFeedback.textContent = `Account created for ${session.user.email}.`;
+    await saveSharedData(false);
     render();
   } catch (error) {
     els.accountFeedback.textContent = error.message || "Create account failed.";
@@ -553,18 +475,17 @@ function setAuthSession(session) {
   localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
 }
 
-async function authRequest(path, body) {
-  const response = await fetch(`${syncConfig.url}/auth/v1/${path}`, {
+async function authRequest(action, body) {
+  const response = await fetch("/api/auth", {
     method: "POST",
     headers: {
-      apikey: syncConfig.key,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ action, ...body })
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(result.error_description || result.msg || result.message || `Auth failed (${response.status})`);
+    throw new Error(result.message || `Auth failed (${response.status})`);
   }
   return result;
 }

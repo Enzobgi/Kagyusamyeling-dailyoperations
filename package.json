@@ -1,0 +1,14 @@
+{
+  "name": "kagyusamyeling-dailyoperations",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "check": "node --check app.js && node --check api/_db.js && node --check api/auth.js && node --check api/data.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
