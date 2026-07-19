@@ -1,17 +1,16 @@
-# Meditation Center Operations Dashboard
+# Kagyu Samye Ling - Les Jardins de Meditation
 
-A static web app for coordinating room bookings, meditation center events, volunteer scheduling, attendance, and daily operations alerts.
+A static web app for managing sleeping rooms and guest stays.
 
 ## Features
 
-- Room bookings with edit, cancel, recurring booking, capacity warnings, and double-booking prevention
-- Event calendar with day, week, month, room, type, and search filters
-- Excel-like volunteer attendance table with status updates, check-in/check-out, CSV export, and Excel-compatible export
-- Volunteer assignment with overlap conflict detection and recurring commitment tracking
-- Dashboard alerts for missing volunteers, room conflicts, unconfirmed bookings, and capacity issues
-- Admin, Coordinator, Volunteer, and Viewer role views
-- Demo and true-data modes
-- Browser-saved true data with JSON import, export, and reset
+- Simple sleeping-room list with room type, beds, area, bathroom, active/inactive, and notes
+- Guest stays with check-in, check-out, status, people count, contact, and notes
+- Double-booking prevention for sleeping rooms
+- Occupied, available, and arrival counts for the selected date
+- Demo and true-data modes, with true data saved in the browser
+- JSON import/export for true data
+- CSV export and printable room sheet
 - Printable daily operations sheet
 
 ## Run
@@ -20,6 +19,6 @@ Open `index.html` directly in a browser. No build step or server is required.
 
 ## Data modes
 
-- `Demo` shows fictive sample data for exploring the interface.
+- `Demo` shows fictive sample rooms and stays.
 - `True data` is the editable workspace. Changes are saved in the browser with `localStorage`.
-- Use Admin settings to export, import, or reset the true-data JSON.
+- Use the Data panel to export, import, or reset true-data JSON.

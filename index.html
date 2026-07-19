@@ -3,14 +3,15 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Meditation Center Operations</title>
+    <title>Kagyu Samye Ling - Les Jardins de Meditation</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="topbar">
       <div>
-        <p class="eyebrow">Daily operations</p>
-        <h1>Stillwater Meditation Center</h1>
+        <p class="eyebrow">Kagyu Samye Ling</p>
+        <h1>Les Jardins de Meditation</h1>
+        <p class="subtitle">Sleeping rooms and guest stays</p>
       </div>
       <div class="topbar-actions">
         <div class="mode-switch" aria-label="Data mode">
@@ -21,15 +22,6 @@
           <span>Date</span>
           <input id="activeDate" type="date">
         </label>
-        <label class="field compact">
-          <span>Role</span>
-          <select id="roleView">
-            <option>Admin</option>
-            <option>Coordinator</option>
-            <option>Volunteer</option>
-            <option>Viewer</option>
-          </select>
-        </label>
         <div class="mode-note">
           <span id="dataModeLabel">True data</span>
         </div>
@@ -37,268 +29,219 @@
     </header>
 
     <main class="app-shell">
-      <section class="summary-band" aria-label="Daily summary">
+      <section class="summary-band" aria-label="Daily room summary">
         <article>
-          <span id="todayEventCount">0</span>
-          <p>events today</p>
+          <span id="roomCount">0</span>
+          <p>rooms</p>
         </article>
         <article>
-          <span id="presentCount">0</span>
-          <p>volunteers present</p>
+          <span id="occupiedCount">0</span>
+          <p>occupied tonight</p>
         </article>
         <article>
-          <span id="openRoomsCount">0</span>
-          <p>rooms open now</p>
+          <span id="availableCount">0</span>
+          <p>available tonight</p>
         </article>
         <article>
-          <span id="alertCount">0</span>
-          <p>active alerts</p>
+          <span id="arrivalCount">0</span>
+          <p>arrivals today</p>
         </article>
-      </section>
-
-      <section class="alerts-section" aria-labelledby="alertsTitle">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Attention</p>
-            <h2 id="alertsTitle">Alerts</h2>
-          </div>
-          <button id="printOps" class="secondary-action" type="button">Print daily sheet</button>
-        </div>
-        <div id="alerts" class="alerts-grid"></div>
       </section>
 
       <section class="workspace-grid">
         <div class="primary-stack">
-          <section aria-labelledby="eventsTitle">
+          <section aria-labelledby="roomsTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Calendar</p>
-                <h2 id="eventsTitle">Today's Events</h2>
+                <p class="eyebrow">Rooms</p>
+                <h2 id="roomsTitle">Sleeping Rooms</h2>
               </div>
               <div class="toolbar">
-                <input id="globalSearch" type="search" placeholder="Search volunteer, room, event">
-                <select id="periodFilter" aria-label="Calendar period">
-                  <option value="day">Day</option>
-                  <option value="week">Week</option>
-                  <option value="month">Month</option>
-                </select>
-                <select id="eventTypeFilter" aria-label="Event type filter">
-                  <option value="all">All event types</option>
+                <input id="searchInput" type="search" placeholder="Search room, guest, notes">
+                <select id="roomStatusFilter" aria-label="Room status filter">
+                  <option value="all">All rooms</option>
+                  <option value="available">Available</option>
+                  <option value="occupied">Occupied</option>
                 </select>
               </div>
             </div>
-            <div id="eventsList" class="event-list"></div>
+            <div id="roomsList" class="rooms-list"></div>
           </section>
 
-          <section aria-labelledby="attendanceTitle">
+          <section aria-labelledby="staysTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Attendance</p>
-                <h2 id="attendanceTitle">Volunteer Attendance Sheet</h2>
+                <p class="eyebrow">Bookings</p>
+                <h2 id="staysTitle">Guest Stays</h2>
               </div>
               <div class="toolbar">
-                <select id="statusFilter" aria-label="Attendance status filter">
-                  <option value="all">All statuses</option>
-                  <option>Present</option>
-                  <option>Absent</option>
-                  <option>Late</option>
-                  <option>Excused</option>
-                  <option>Pending</option>
-                  <option>Not Scheduled</option>
+                <select id="stayStatusFilter" aria-label="Stay status filter">
+                  <option value="all">All stays</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="checked-in">Checked in</option>
+                  <option value="checked-out">Checked out</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
                 <button id="exportCsv" class="secondary-action" type="button">Export CSV</button>
-                <button id="exportExcel" class="secondary-action" type="button">Export Excel</button>
+                <button id="printSheet" class="secondary-action" type="button">Print sheet</button>
               </div>
             </div>
             <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Volunteer</th>
-                    <th>Role</th>
-                    <th>Contact</th>
-                    <th>Date</th>
-                    <th>Scheduled shift</th>
-                    <th>Presence</th>
-                    <th>Check-in</th>
-                    <th>Check-out</th>
-                    <th>Notes</th>
+                    <th>Guest</th>
+                    <th>Room</th>
+                    <th>Dates</th>
+                    <th>People</th>
                     <th>Status</th>
+                    <th>Contact</th>
+                    <th>Notes</th>
+                    <th></th>
                   </tr>
                 </thead>
-                <tbody id="attendanceBody"></tbody>
+                <tbody id="staysBody"></tbody>
               </table>
             </div>
           </section>
         </div>
 
-        <aside class="side-stack" aria-label="Operations tools">
-          <section aria-labelledby="bookingTitle">
+        <aside class="side-stack" aria-label="Data entry">
+          <section aria-labelledby="quickStayTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Rooms</p>
-                <h2 id="bookingTitle">Room Booking</h2>
+                <p class="eyebrow">Add</p>
+                <h2 id="quickStayTitle">New Stay</h2>
               </div>
             </div>
-            <form id="bookingForm" class="form-grid">
-              <input type="hidden" id="bookingId">
+            <form id="stayForm" class="form-grid">
+              <input id="stayId" type="hidden">
+              <label class="field">
+                <span>Guest name</span>
+                <input id="guestName" required placeholder="Guest or family name">
+              </label>
               <label class="field">
                 <span>Room</span>
-                <select id="bookingRoom" required></select>
-              </label>
-              <label class="field">
-                <span>Event name</span>
-                <input id="bookingEvent" required placeholder="Morning sitting">
-              </label>
-              <label class="field">
-                <span>Organizer</span>
-                <input id="bookingOrganizer" required placeholder="Mira Chen">
+                <select id="stayRoom" required></select>
               </label>
               <div class="two-col">
                 <label class="field">
-                  <span>Start</span>
-                  <input id="bookingStart" type="datetime-local" required>
+                  <span>Check-in</span>
+                  <input id="checkIn" type="date" required>
                 </label>
                 <label class="field">
-                  <span>End</span>
-                  <input id="bookingEnd" type="datetime-local" required>
+                  <span>Check-out</span>
+                  <input id="checkOut" type="date" required>
                 </label>
               </div>
               <div class="two-col">
                 <label class="field">
-                  <span>Expected</span>
-                  <input id="bookingExpected" type="number" min="1" value="18">
+                  <span>People</span>
+                  <input id="guestCount" type="number" min="1" value="1">
                 </label>
                 <label class="field">
-                  <span>Recurring</span>
-                  <select id="bookingRecurring">
-                    <option value="none">None</option>
-                    <option value="weekly">Weekly x 6</option>
-                    <option value="monthly">Monthly x 3</option>
+                  <span>Status</span>
+                  <select id="stayStatus">
+                    <option value="confirmed">Confirmed</option>
+                    <option value="checked-in">Checked in</option>
+                    <option value="checked-out">Checked out</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </label>
               </div>
               <label class="field">
-                <span>Setup requirements</span>
-                <select id="bookingSetup" multiple></select>
+                <span>Contact</span>
+                <input id="guestContact" placeholder="Phone or email">
               </label>
               <label class="field">
                 <span>Notes</span>
-                <textarea id="bookingNotes" rows="3" placeholder="Quiet entry after opening bell"></textarea>
+                <textarea id="stayNotes" rows="3" placeholder="Diet, accessibility, retreat group, payment note"></textarea>
               </label>
-              <div id="bookingFeedback" class="form-feedback" aria-live="polite"></div>
+              <div id="stayFeedback" class="form-feedback" aria-live="polite"></div>
               <div class="button-row">
-                <button type="submit">Save booking</button>
-                <button id="clearBooking" class="secondary-action" type="button">Clear</button>
+                <button type="submit">Save stay</button>
+                <button id="clearStay" class="secondary-action" type="button">Clear</button>
               </div>
             </form>
           </section>
 
-          <section aria-labelledby="roomsTitle">
+          <section aria-labelledby="quickRoomTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Availability</p>
-                <h2 id="roomsTitle">Rooms</h2>
-              </div>
-              <select id="roomFilter" aria-label="Room filter">
-                <option value="all">All rooms</option>
-              </select>
-            </div>
-            <div id="roomsList" class="rooms-list"></div>
-          </section>
-
-          <section aria-labelledby="scheduleTitle">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Scheduling</p>
-                <h2 id="scheduleTitle">Volunteer Assignment</h2>
+                <p class="eyebrow">Add</p>
+                <h2 id="quickRoomTitle">New Room</h2>
               </div>
             </div>
-            <form id="assignmentForm" class="form-grid">
-              <label class="field">
-                <span>Volunteer</span>
-                <select id="assignmentVolunteer"></select>
-              </label>
-              <label class="field">
-                <span>Event or task</span>
-                <select id="assignmentEvent"></select>
-              </label>
-              <label class="field">
-                <span>Role</span>
-                <select id="assignmentRole"></select>
-              </label>
+            <form id="roomForm" class="form-grid">
+              <input id="roomId" type="hidden">
               <div class="two-col">
                 <label class="field">
-                  <span>Shift start</span>
-                  <input id="assignmentStart" type="datetime-local" required>
+                  <span>Room name/number</span>
+                  <input id="roomName" required placeholder="Room 12">
                 </label>
                 <label class="field">
-                  <span>Shift end</span>
-                  <input id="assignmentEnd" type="datetime-local" required>
+                  <span>Beds</span>
+                  <input id="roomBeds" type="number" min="1" value="1">
+                </label>
+              </div>
+              <div class="two-col">
+                <label class="field">
+                  <span>Type</span>
+                  <select id="roomType">
+                    <option>Single</option>
+                    <option>Twin</option>
+                    <option>Double</option>
+                    <option>Dormitory</option>
+                    <option>Family</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Area</span>
+                  <input id="roomArea" placeholder="Main house, garden wing">
                 </label>
               </div>
               <label class="checkline">
-                <input id="assignmentRecurring" type="checkbox">
-                <span>Recurring weekly commitment</span>
+                <input id="roomBathroom" type="checkbox">
+                <span>Private bathroom</span>
               </label>
-              <div id="assignmentFeedback" class="form-feedback" aria-live="polite"></div>
-              <button type="submit">Assign volunteer</button>
+              <label class="checkline">
+                <input id="roomActive" type="checkbox" checked>
+                <span>Available for booking</span>
+              </label>
+              <label class="field">
+                <span>Room notes</span>
+                <textarea id="roomNotes" rows="3" placeholder="Quiet room, stairs, accessible, near garden"></textarea>
+              </label>
+              <div id="roomFeedback" class="form-feedback" aria-live="polite"></div>
+              <div class="button-row">
+                <button type="submit">Save room</button>
+                <button id="clearRoom" class="secondary-action" type="button">Clear</button>
+              </div>
             </form>
           </section>
 
-          <section aria-labelledby="reportsTitle">
+          <section aria-labelledby="dataTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Reports</p>
-                <h2 id="reportsTitle">Operations Snapshot</h2>
+                <p class="eyebrow">Data</p>
+                <h2 id="dataTitle">True Data</h2>
               </div>
             </div>
-            <div id="reports" class="report-list"></div>
-          </section>
-
-          <section class="admin-panel" aria-labelledby="adminTitle">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Admin</p>
-                <h2 id="adminTitle">Center Settings</h2>
-              </div>
-            </div>
-            <form id="adminForm" class="form-grid">
-              <div class="two-col">
-                <label class="field">
-                  <span>New room</span>
-                  <input id="adminRoomName" placeholder="Lotus Room">
-                </label>
-                <label class="field">
-                  <span>Capacity</span>
-                  <input id="adminRoomCapacity" type="number" min="1" value="20">
-                </label>
-              </div>
-              <label class="field">
-                <span>New volunteer</span>
-                <input id="adminVolunteerName" placeholder="Amara Lin">
-              </label>
-              <label class="field">
-                <span>Contact</span>
-                <input id="adminVolunteerContact" placeholder="amara@center.org">
-              </label>
-              <button type="submit">Add settings record</button>
-            </form>
             <div class="data-actions">
-              <button id="exportData" class="secondary-action" type="button">Export true data</button>
-              <button id="importData" class="secondary-action" type="button">Import true data</button>
-              <button id="resetTrueData" class="secondary-action" type="button">Reset true data</button>
+              <button id="exportData" class="secondary-action" type="button">Export JSON</button>
+              <button id="importData" class="secondary-action" type="button">Import JSON</button>
+              <button id="resetTrueData" class="secondary-action" type="button">Reset</button>
               <input id="importDataFile" type="file" accept="application/json,.json" hidden>
             </div>
             <div id="dataFeedback" class="form-feedback" aria-live="polite"></div>
-            <div id="adminSummary" class="report-list"></div>
+            <div id="dataSummary" class="report-list"></div>
           </section>
         </aside>
       </section>
     </main>
 
     <template id="emptyStateTemplate">
-      <div class="empty-state">No matching records for this view.</div>
+      <div class="empty-state">No matching records yet.</div>
     </template>
 
     <script src="app.js"></script>
