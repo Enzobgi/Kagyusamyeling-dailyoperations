@@ -8,6 +8,7 @@ A static web app for managing sleeping rooms and guest stays.
 - Guest stays with check-in, check-out, status, people count, contact, and notes
 - Double-booking prevention for sleeping rooms
 - Occupied, available, and arrival counts for the selected date
+- Monthly occupancy grid with all rooms together
 - Demo and true-data modes, with true data saved in the browser
 - User accounts and optional cloud sync across devices with Supabase
 - JSON import/export for true data

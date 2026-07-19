@@ -350,6 +350,82 @@ textarea {
   border-radius: 8px;
 }
 
+.month-grid-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffefb;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) repeat(var(--days), minmax(4.2rem, 1fr));
+  min-width: calc(11rem + var(--days) * 4.2rem);
+}
+
+.month-head,
+.month-room,
+.month-cell {
+  min-height: 3.6rem;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 0.45rem;
+  display: grid;
+  align-content: start;
+  gap: 0.15rem;
+  font-size: 0.78rem;
+}
+
+.month-head {
+  min-height: 3rem;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.month-head strong,
+.month-room strong,
+.month-cell strong {
+  font-size: 0.82rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.month-head span,
+.month-room span,
+.month-cell span {
+  color: var(--muted);
+}
+
+.month-room {
+  background: var(--surface);
+}
+
+.month-cell.occupied {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  cursor: pointer;
+}
+
+.month-cell.occupied strong {
+  color: var(--accent-strong);
+}
+
+.month-cell.today,
+.month-head.today {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sticky-room {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.month-head.sticky-room {
+  z-index: 3;
+}
+
 table {
   width: 100%;
   min-width: 820px;

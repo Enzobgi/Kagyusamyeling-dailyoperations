@@ -124,7 +124,7 @@ function cacheElements() {
   [
     "activeDate", "demoMode", "trueDataMode", "dataModeLabel", "roomCount", "occupiedCount",
     "availableCount", "arrivalCount", "searchInput", "roomStatusFilter", "roomsList",
-    "stayStatusFilter", "exportCsv", "printSheet", "staysBody", "stayForm", "stayId",
+    "monthPicker", "prevMonth", "nextMonth", "monthlyOccupancy", "stayStatusFilter", "exportCsv", "printSheet", "staysBody", "stayForm", "stayId",
     "guestName", "stayRoom", "checkIn", "checkOut", "guestCount", "stayStatus", "guestContact",
     "stayNotes", "stayFeedback", "clearStay", "roomForm", "roomId", "roomName", "roomBeds",
     "roomType", "roomArea", "roomBathroom", "roomActive", "roomNotes", "roomFeedback",
@@ -139,6 +139,7 @@ function cacheElements() {
 
 function hydrateControls() {
   if (!els.activeDate.value) els.activeDate.value = isoDate;
+  if (!els.monthPicker.value) els.monthPicker.value = isoDate.slice(0, 7);
   if (!els.checkIn.value) els.checkIn.value = els.activeDate.value;
   if (!els.checkOut.value) els.checkOut.value = addDays(els.activeDate.value, 1);
   fillSelect(els.stayRoom, state.rooms.filter((roomItem) => roomItem.active).map((roomItem) => [roomItem.id, roomLabel(roomItem)]));
@@ -148,9 +149,11 @@ function hydrateControls() {
 }
 
 function bindEvents() {
-  ["activeDate", "searchInput", "roomStatusFilter", "stayStatusFilter"].forEach((id) => {
+  ["activeDate", "searchInput", "roomStatusFilter", "stayStatusFilter", "monthPicker"].forEach((id) => {
     els[id].addEventListener("input", render);
   });
+  els.prevMonth.addEventListener("click", () => shiftMonth(-1));
+  els.nextMonth.addEventListener("click", () => shiftMonth(1));
   els.demoMode.addEventListener("click", () => switchDataMode("demo"));
   els.trueDataMode.addEventListener("click", () => switchDataMode("true"));
   els.roomForm.addEventListener("submit", saveRoom);
@@ -177,6 +180,7 @@ function render() {
   hydrateControls();
   renderSummary();
   renderRooms();
+  renderMonthlyOccupancy();
   renderStays();
   renderDataSummary();
 }
@@ -282,6 +286,72 @@ function renderStays() {
   els.staysBody.querySelectorAll("[data-cancel-stay]").forEach((button) => {
     button.addEventListener("click", () => cancelStay(button.dataset.cancelStay));
   });
+}
+
+function renderMonthlyOccupancy() {
+  const rooms = state.rooms.filter((roomItem) => roomItem.active || monthHasStay(roomItem.id));
+  const days = daysInSelectedMonth();
+  els.monthlyOccupancy.innerHTML = "";
+  if (!rooms.length) {
+    els.monthlyOccupancy.append(emptyState());
+    return;
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "month-grid";
+  grid.style.setProperty("--days", days.length);
+  grid.append(monthCell("Room", "month-head sticky-room"));
+  days.forEach((day) => {
+    grid.append(monthCell(String(new Date(`${day}T00:00`).getDate()), `month-head ${day === isoDate ? "today" : ""}`, shortWeekday(day)));
+  });
+
+  rooms.forEach((roomItem) => {
+    grid.append(monthCell(roomItem.name, "month-room sticky-room", `${roomItem.type} | ${roomItem.beds} bed${roomItem.beds === 1 ? "" : "s"}`));
+    days.forEach((day) => {
+      const stayItem = stayForRoomOnDate(roomItem.id, day);
+      const classes = ["month-cell"];
+      if (stayItem) classes.push("occupied");
+      if (day === isoDate) classes.push("today");
+      const label = stayItem ? stayItem.guestName : "";
+      const meta = stayItem ? `${statusLabel(stayItem.status)} | ${stayItem.guests} people` : "";
+      grid.append(monthCell(label, classes.join(" "), meta, stayItem?.id));
+    });
+  });
+  els.monthlyOccupancy.append(grid);
+
+  els.monthlyOccupancy.querySelectorAll("[data-stay-id]").forEach((cell) => {
+    cell.addEventListener("click", () => editStay(cell.dataset.stayId));
+  });
+}
+
+function monthCell(label, className, meta = "", stayId = "") {
+  const node = document.createElement("div");
+  node.className = className;
+  if (stayId && dataMode === "true") node.dataset.stayId = stayId;
+  node.innerHTML = `<strong>${escapeHtml(label)}</strong>${meta ? `<span>${escapeHtml(meta)}</span>` : ""}`;
+  return node;
+}
+
+function daysInSelectedMonth() {
+  const [year, month] = els.monthPicker.value.split("-").map(Number);
+  const total = new Date(year, month, 0).getDate();
+  return Array.from({ length: total }, (_, index) => `${els.monthPicker.value}-${String(index + 1).padStart(2, "0")}`);
+}
+
+function monthHasStay(roomId) {
+  const days = daysInSelectedMonth();
+  return days.some((day) => stayForRoomOnDate(roomId, day));
+}
+
+function shiftMonth(amount) {
+  const [year, month] = els.monthPicker.value.split("-").map(Number);
+  const date = new Date(year, month - 1 + amount, 1);
+  els.monthPicker.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  render();
+}
+
+function shortWeekday(day) {
+  return new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(new Date(`${day}T00:00`));
 }
 
 function renderDataSummary() {
