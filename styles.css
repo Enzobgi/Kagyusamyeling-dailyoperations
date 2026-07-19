@@ -110,10 +110,36 @@ h2 {
 .topbar-actions,
 .toolbar,
 .button-row,
-.two-col {
+.two-col,
+.mode-switch,
+.data-actions {
   display: flex;
   gap: 0.65rem;
   align-items: center;
+}
+
+.mode-switch {
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.mode-switch button {
+  padding: 0.52rem 0.75rem;
+}
+
+.mode-switch button.active {
+  background: var(--accent-strong);
+  color: #fffdf8;
+}
+
+.mode-note {
+  min-width: 5.8rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  align-self: center;
 }
 
 .app-shell {
@@ -277,6 +303,20 @@ select[multiple] {
   color: var(--danger);
   min-height: 1.15rem;
   font-size: 0.85rem;
+}
+
+.data-actions {
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.data-actions button {
+  flex: 1 1 8.5rem;
+}
+
+.demo-data .admin-panel .data-actions,
+.demo-data .admin-panel #adminForm {
+  opacity: 0.72;
 }
 
 .event-list,
@@ -485,7 +525,8 @@ td select {
   .topbar,
   .section-heading,
   .topbar-actions,
-  .toolbar {
+  .toolbar,
+  .mode-switch {
     align-items: stretch;
     flex-direction: column;
   }

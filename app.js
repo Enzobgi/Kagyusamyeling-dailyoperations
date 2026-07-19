@@ -1,50 +1,16 @@
-const state = {
-  rooms: [
-    { id: "zendo", name: "Main Zendo", capacity: 64, setup: ["cushions", "altar setup", "tea service"] },
-    { id: "garden", name: "Garden Hall", capacity: 38, setup: ["chairs", "projector", "tea service"] },
-    { id: "library", name: "Library Room", capacity: 18, setup: ["chairs", "projector"] },
-    { id: "kitchen", name: "Community Kitchen", capacity: 24, setup: ["tea service", "cleaning required"] },
-    { id: "studio", name: "Quiet Studio", capacity: 14, setup: ["cushions", "cleaning required"] }
-  ],
-  volunteers: [
-    { id: "maya", name: "Maya Ortiz", contact: "maya@center.org", skills: "reception, Spanish, tea service", restrictions: "Leaves by 18:00" },
-    { id: "jonah", name: "Jonah Reed", contact: "jonah@center.org", skills: "room setup, AV, maintenance", restrictions: "No Friday evenings" },
-    { id: "sana", name: "Sana Iqbal", contact: "sana@center.org", skills: "kitchen, retreats, mentoring", restrictions: "Prefers mornings" },
-    { id: "leo", name: "Leo Park", contact: "leo@center.org", skills: "cleaning, garden, reception", restrictions: "Limited lifting" },
-    { id: "elena", name: "Elena Vos", contact: "elena@center.org", skills: "teacher assistant, ceremonies", restrictions: "Remote admin Mondays" },
-    { id: "nora", name: "Nora Silva", contact: "nora@center.org", skills: "community meals, setup", restrictions: "Needs one week notice" }
-  ],
-  roles: ["Reception", "Kitchen", "Cleaning", "Room Setup", "Teacher Assistant", "Garden", "Maintenance", "Event Support"],
-  eventTypes: ["Meditation Session", "Retreat", "Volunteer Meeting", "Workshop", "Ceremony", "Cleaning Day", "Community Meal"],
-  setupNeeds: ["cushions", "chairs", "projector", "tea service", "altar setup", "cleaning required"],
-  bookings: [],
-  assignments: []
-};
-
 const today = new Date();
 const isoDate = dateToInput(today);
 const seedDate = isoDate;
+const TRUE_DATA_KEY = "meditation-center-true-data-v1";
+const DATA_MODE_KEY = "meditation-center-data-mode-v1";
+const defaultLists = {
+  roles: ["Reception", "Kitchen", "Cleaning", "Room Setup", "Teacher Assistant", "Garden", "Maintenance", "Event Support"],
+  eventTypes: ["Meditation Session", "Retreat", "Volunteer Meeting", "Workshop", "Ceremony", "Cleaning Day", "Community Meal"],
+  setupNeeds: ["cushions", "chairs", "projector", "tea service", "altar setup", "cleaning required"]
+};
 
-state.bookings = [
-  booking("b1", "zendo", "Dawn Sitting", "Mira Chen", `${seedDate}T06:30`, `${seedDate}T08:00`, 42, "Meditation Session", "Ananda Rao", ["cushions", "altar setup"], "Silence in hall until closing bell", true),
-  booking("b2", "garden", "Mindful Work Circle", "Sana Iqbal", `${seedDate}T10:00`, `${seedDate}T11:30`, 28, "Volunteer Meeting", "Sana Iqbal", ["chairs", "tea service"], "Review retreat prep checklist", false),
-  booking("b3", "library", "Intro to Practice", "Elena Vos", `${seedDate}T13:00`, `${seedDate}T15:00`, 22, "Workshop", "Elena Vos", ["chairs", "projector"], "Capacity watch: waitlist likely", false),
-  booking("b4", "kitchen", "Community Meal Prep", "Nora Silva", `${seedDate}T16:00`, `${seedDate}T19:00`, 18, "Community Meal", "Nora Silva", ["tea service", "cleaning required"], "Use allergy cards", true),
-  booking("b5", "studio", "Evening Metta Practice", "Mira Chen", `${seedDate}T19:30`, `${seedDate}T20:30`, 12, "Meditation Session", "Mira Chen", ["cushions"], "Open windows before session", false),
-  booking("b6", "zendo", "Weekend Sesshin", "Ananda Rao", addDays(seedDate, 3, "09:00"), addDays(seedDate, 5, "16:00"), 58, "Retreat", "Ananda Rao", ["cushions", "altar setup", "tea service"], "Residential retreat begins Friday", true)
-];
-
-state.assignments = [
-  assignment("a1", "maya", "b1", "Reception", `${seedDate}T06:00`, `${seedDate}T08:15`, "Present", "06:05", "", "Greeted newcomers", true, 1),
-  assignment("a2", "jonah", "b1", "Room Setup", `${seedDate}T06:00`, `${seedDate}T07:00`, "Present", "05:55", "07:05", "Extra cushions placed", true, 0),
-  assignment("a3", "sana", "b2", "Event Support", `${seedDate}T09:45`, `${seedDate}T11:45`, "Pending", "", "", "Bring signup sheet", false, 0),
-  assignment("a4", "leo", "b3", "Reception", `${seedDate}T12:30`, `${seedDate}T15:15`, "Absent", "", "", "No message yet", false, 3),
-  assignment("a5", "elena", "b3", "Teacher Assistant", `${seedDate}T12:45`, `${seedDate}T15:15`, "Present", "12:40", "", "Participant questions after talk", false, 0),
-  assignment("a6", "nora", "b4", "Kitchen", `${seedDate}T15:30`, `${seedDate}T19:30`, "Late", "15:52", "", "Traffic delay", true, 1),
-  assignment("a7", "jonah", "b4", "Maintenance", `${seedDate}T16:30`, `${seedDate}T18:00`, "Pending", "", "", "Check dishwasher noise", false, 0),
-  assignment("a8", "jonah", "b5", "Room Setup", `${seedDate}T19:00`, `${seedDate}T20:45`, "Pending", "", "", "Possible overlap with cleanup", false, 0)
-];
-
+let dataMode = localStorage.getItem(DATA_MODE_KEY) || "true";
+let state = dataMode === "demo" ? createDemoData() : loadTrueData();
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -62,6 +28,98 @@ function assignment(id, volunteerId, bookingId, role, start, end, status, checkI
   return { id, volunteerId, bookingId, role, start, end, status, checkIn, checkOut, notes, recurring, noShows };
 }
 
+function createDemoData() {
+  return normalizeData({
+    rooms: [
+      { id: "zendo", name: "Main Zendo", capacity: 64, setup: ["cushions", "altar setup", "tea service"] },
+      { id: "garden", name: "Garden Hall", capacity: 38, setup: ["chairs", "projector", "tea service"] },
+      { id: "library", name: "Library Room", capacity: 18, setup: ["chairs", "projector"] },
+      { id: "kitchen", name: "Community Kitchen", capacity: 24, setup: ["tea service", "cleaning required"] },
+      { id: "studio", name: "Quiet Studio", capacity: 14, setup: ["cushions", "cleaning required"] }
+    ],
+    volunteers: [
+      { id: "maya", name: "Maya Ortiz", contact: "maya@center.org", skills: "reception, Spanish, tea service", restrictions: "Leaves by 18:00" },
+      { id: "jonah", name: "Jonah Reed", contact: "jonah@center.org", skills: "room setup, AV, maintenance", restrictions: "No Friday evenings" },
+      { id: "sana", name: "Sana Iqbal", contact: "sana@center.org", skills: "kitchen, retreats, mentoring", restrictions: "Prefers mornings" },
+      { id: "leo", name: "Leo Park", contact: "leo@center.org", skills: "cleaning, garden, reception", restrictions: "Limited lifting" },
+      { id: "elena", name: "Elena Vos", contact: "elena@center.org", skills: "teacher assistant, ceremonies", restrictions: "Remote admin Mondays" },
+      { id: "nora", name: "Nora Silva", contact: "nora@center.org", skills: "community meals, setup", restrictions: "Needs one week notice" }
+    ],
+    bookings: [
+      booking("b1", "zendo", "Dawn Sitting", "Mira Chen", `${seedDate}T06:30`, `${seedDate}T08:00`, 42, "Meditation Session", "Ananda Rao", ["cushions", "altar setup"], "Silence in hall until closing bell", true),
+      booking("b2", "garden", "Mindful Work Circle", "Sana Iqbal", `${seedDate}T10:00`, `${seedDate}T11:30`, 28, "Volunteer Meeting", "Sana Iqbal", ["chairs", "tea service"], "Review retreat prep checklist", false),
+      booking("b3", "library", "Intro to Practice", "Elena Vos", `${seedDate}T13:00`, `${seedDate}T15:00`, 22, "Workshop", "Elena Vos", ["chairs", "projector"], "Capacity watch: waitlist likely", false),
+      booking("b4", "kitchen", "Community Meal Prep", "Nora Silva", `${seedDate}T16:00`, `${seedDate}T19:00`, 18, "Community Meal", "Nora Silva", ["tea service", "cleaning required"], "Use allergy cards", true),
+      booking("b5", "studio", "Evening Metta Practice", "Mira Chen", `${seedDate}T19:30`, `${seedDate}T20:30`, 12, "Meditation Session", "Mira Chen", ["cushions"], "Open windows before session", false),
+      booking("b6", "zendo", "Weekend Sesshin", "Ananda Rao", addDays(seedDate, 3, "09:00"), addDays(seedDate, 5, "16:00"), 58, "Retreat", "Ananda Rao", ["cushions", "altar setup", "tea service"], "Residential retreat begins Friday", true)
+    ],
+    assignments: [
+      assignment("a1", "maya", "b1", "Reception", `${seedDate}T06:00`, `${seedDate}T08:15`, "Present", "06:05", "", "Greeted newcomers", true, 1),
+      assignment("a2", "jonah", "b1", "Room Setup", `${seedDate}T06:00`, `${seedDate}T07:00`, "Present", "05:55", "07:05", "Extra cushions placed", true, 0),
+      assignment("a3", "sana", "b2", "Event Support", `${seedDate}T09:45`, `${seedDate}T11:45`, "Pending", "", "", "Bring signup sheet", false, 0),
+      assignment("a4", "leo", "b3", "Reception", `${seedDate}T12:30`, `${seedDate}T15:15`, "Absent", "", "", "No message yet", false, 3),
+      assignment("a5", "elena", "b3", "Teacher Assistant", `${seedDate}T12:45`, `${seedDate}T15:15`, "Present", "12:40", "", "Participant questions after talk", false, 0),
+      assignment("a6", "nora", "b4", "Kitchen", `${seedDate}T15:30`, `${seedDate}T19:30`, "Late", "15:52", "", "Traffic delay", true, 1),
+      assignment("a7", "jonah", "b4", "Maintenance", `${seedDate}T16:30`, `${seedDate}T18:00`, "Pending", "", "", "Check dishwasher noise", false, 0),
+      assignment("a8", "jonah", "b5", "Room Setup", `${seedDate}T19:00`, `${seedDate}T20:45`, "Pending", "", "", "Possible overlap with cleanup", false, 0)
+    ]
+  });
+}
+
+function createEmptyTrueData() {
+  return normalizeData({
+    rooms: [],
+    volunteers: [],
+    bookings: [],
+    assignments: []
+  });
+}
+
+function normalizeData(data) {
+  return {
+    rooms: Array.isArray(data?.rooms) ? data.rooms : [],
+    volunteers: Array.isArray(data?.volunteers) ? data.volunteers : [],
+    roles: Array.isArray(data?.roles) && data.roles.length ? data.roles : [...defaultLists.roles],
+    eventTypes: Array.isArray(data?.eventTypes) && data.eventTypes.length ? data.eventTypes : [...defaultLists.eventTypes],
+    setupNeeds: Array.isArray(data?.setupNeeds) && data.setupNeeds.length ? data.setupNeeds : [...defaultLists.setupNeeds],
+    bookings: Array.isArray(data?.bookings) ? data.bookings : [],
+    assignments: Array.isArray(data?.assignments) ? data.assignments : []
+  };
+}
+
+function loadTrueData() {
+  try {
+    const saved = localStorage.getItem(TRUE_DATA_KEY);
+    return saved ? normalizeData(JSON.parse(saved)) : createEmptyTrueData();
+  } catch {
+    return createEmptyTrueData();
+  }
+}
+
+function persistTrueData() {
+  if (dataMode !== "true") return;
+  localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(state));
+}
+
+function switchDataMode(mode) {
+  dataMode = mode;
+  localStorage.setItem(DATA_MODE_KEY, mode);
+  state = mode === "demo" ? createDemoData() : loadTrueData();
+  hydrateControls();
+  clearBookingForm();
+  els.dataFeedback.textContent = mode === "demo" ? "Demo mode shows fictive sample data. Switch to true data to edit your saved center records." : "True data mode is active. Changes are saved in this browser.";
+  render();
+}
+
+function updateModeButtons() {
+  const isDemo = dataMode === "demo";
+  els.demoMode.classList.toggle("active", isDemo);
+  els.trueDataMode.classList.toggle("active", !isDemo);
+  els.demoMode.classList.toggle("secondary-action", !isDemo);
+  els.trueDataMode.classList.toggle("secondary-action", isDemo);
+  els.dataModeLabel.textContent = isDemo ? "Demo data" : "True data";
+}
+
 function cacheElements() {
   [
     "activeDate", "roleView", "todayEventCount", "presentCount", "openRoomsCount", "alertCount", "alerts",
@@ -71,14 +129,15 @@ function cacheElements() {
     "bookingSetup", "bookingNotes", "bookingFeedback", "clearBooking", "roomFilter", "roomsList",
     "assignmentForm", "assignmentVolunteer", "assignmentEvent", "assignmentRole", "assignmentStart",
     "assignmentEnd", "assignmentRecurring", "assignmentFeedback", "reports", "adminForm", "adminRoomName",
-    "adminRoomCapacity", "adminVolunteerName", "adminVolunteerContact", "adminSummary"
+    "adminRoomCapacity", "adminVolunteerName", "adminVolunteerContact", "adminSummary", "demoMode",
+    "trueDataMode", "dataModeLabel", "exportData", "importData", "resetTrueData", "importDataFile", "dataFeedback"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
 }
 
 function hydrateControls() {
-  els.activeDate.value = isoDate;
+  if (!els.activeDate.value) els.activeDate.value = isoDate;
   fillSelect(els.bookingRoom, state.rooms.map((room) => [room.id, `${room.name} (${room.capacity})`]));
   fillSelect(els.roomFilter, [["all", "All rooms"], ...state.rooms.map((room) => [room.id, room.name])]);
   fillSelect(els.eventTypeFilter, [["all", "All event types"], ...state.eventTypes.map((type) => [type, type])]);
@@ -90,6 +149,7 @@ function hydrateControls() {
   els.bookingEnd.value = `${isoDate}T10:00`;
   els.assignmentStart.value = `${isoDate}T09:00`;
   els.assignmentEnd.value = `${isoDate}T11:00`;
+  updateModeButtons();
 }
 
 function bindEvents() {
@@ -98,8 +158,14 @@ function bindEvents() {
   });
   els.bookingForm.addEventListener("submit", saveBooking);
   els.clearBooking.addEventListener("click", clearBookingForm);
+  els.demoMode.addEventListener("click", () => switchDataMode("demo"));
+  els.trueDataMode.addEventListener("click", () => switchDataMode("true"));
   els.assignmentForm.addEventListener("submit", saveAssignment);
   els.adminForm.addEventListener("submit", saveAdminRecord);
+  els.exportData.addEventListener("click", exportTrueData);
+  els.importData.addEventListener("click", () => els.importDataFile.click());
+  els.importDataFile.addEventListener("change", importTrueData);
+  els.resetTrueData.addEventListener("click", resetTrueData);
   els.exportCsv.addEventListener("click", () => exportAttendance("csv"));
   els.exportExcel.addEventListener("click", () => exportAttendance("xls"));
   els.printOps.addEventListener("click", () => window.print());
@@ -109,6 +175,8 @@ function render() {
   document.body.classList.toggle("viewer", els.roleView.value === "Viewer");
   document.body.classList.toggle("volunteer", els.roleView.value === "Volunteer");
   document.body.classList.toggle("coordinator", els.roleView.value === "Coordinator");
+  document.body.classList.toggle("demo-data", dataMode === "demo");
+  updateModeButtons();
   syncAssignmentEvents();
   renderSummary();
   renderAlerts();
@@ -162,8 +230,8 @@ function renderEvents() {
   events.sort((a, b) => new Date(a.start) - new Date(b.start)).forEach((event) => {
     const room = roomById(event.roomId);
     const assigned = state.assignments.filter((item) => item.bookingId === event.id);
-    const overCapacity = event.expected > room.capacity;
-    const canManage = els.roleView.value === "Admin" || els.roleView.value === "Coordinator";
+    const overCapacity = room && event.expected > room.capacity;
+    const canManage = dataMode === "true" && (els.roleView.value === "Admin" || els.roleView.value === "Coordinator");
     const node = document.createElement("article");
     node.className = "event-card";
     node.innerHTML = `
@@ -174,9 +242,9 @@ function renderEvents() {
           ${event.confirmed ? "" : '<span class="pill pending">Unconfirmed</span>'}
           ${overCapacity ? '<span class="pill danger">Over capacity</span>' : ""}
         </div>
-        <p class="muted">${formatDateTime(event.start)} - ${formatTime(event.end)} | ${escapeHtml(room.name)} | ${escapeHtml(event.teacher)}</p>
+        <p class="muted">${formatDateTime(event.start)} - ${formatTime(event.end)} | ${escapeHtml(room?.name || "Room removed")} | ${escapeHtml(event.teacher)}</p>
         <div class="pill-row">
-          <span class="pill">${event.expected}/${room.capacity} participants</span>
+          <span class="pill">${event.expected}/${room?.capacity || "?"} participants</span>
           <span class="pill">${assigned.length} volunteers assigned</span>
           ${event.setup.map((need) => `<span class="pill">${escapeHtml(titleCase(need))}</span>`).join("")}
         </div>
@@ -212,7 +280,7 @@ function renderAttendance() {
     return;
   }
 
-  const canEditAttendance = els.roleView.value === "Admin" || els.roleView.value === "Coordinator" || els.roleView.value === "Volunteer";
+  const canEditAttendance = dataMode === "true" && (els.roleView.value === "Admin" || els.roleView.value === "Coordinator" || els.roleView.value === "Volunteer");
   rows.forEach((row) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -292,7 +360,7 @@ function renderReports() {
   const noShowNames = state.assignments
     .filter((item) => item.noShows > 0)
     .sort((a, b) => b.noShows - a.noShows)
-    .map((item) => `${volunteerById(item.volunteerId).name}: ${item.noShows}`)
+    .map((item) => `${volunteerById(item.volunteerId)?.name || "Volunteer removed"}: ${item.noShows}`)
     .slice(0, 3);
   const roomUse = state.rooms.map((room) => ({
     name: room.name,
@@ -303,7 +371,7 @@ function renderReports() {
   els.reports.innerHTML = "";
   [
     ["Volunteer attendance history", `${rows.filter((row) => row.status === "Present").length} present, ${rows.filter((row) => row.status === "Late").length} late, ${missed} absent in this view.`],
-    ["Room usage", `${roomUse.name} is the most used room across current bookings.`],
+    ["Room usage", roomUse ? `${roomUse.name} is the most used room across current bookings.` : "No room usage recorded yet."],
     ["No-show history", noShowNames.length ? noShowNames.join(" | ") : "No repeated no-shows recorded."],
     ["Event participation", `${participation} expected participants for the selected ${els.periodFilter.value}.`]
   ].forEach(([title, body]) => {
@@ -319,23 +387,28 @@ function collectAlerts() {
   const periodBookings = bookingsInPeriod(els.periodFilter.value);
 
   findRoomConflicts(state.bookings).forEach(([a, b]) => {
+    const room = roomById(a.roomId);
     alerts.push({
       level: "danger",
       title: "Room conflict",
-      detail: `${roomById(a.roomId).name} is double-booked for ${a.eventName} and ${b.eventName}.`
+      detail: `${room?.name || "A removed room"} is double-booked for ${a.eventName} and ${b.eventName}.`
     });
   });
 
   findVolunteerConflicts(state.assignments).forEach(([a, b]) => {
+    const volunteer = volunteerById(a.volunteerId);
+    const firstBooking = bookingById(a.bookingId);
+    const secondBooking = bookingById(b.bookingId);
     alerts.push({
       level: "warning",
       title: "Volunteer overlap",
-      detail: `${volunteerById(a.volunteerId).name} overlaps between ${bookingById(a.bookingId).eventName} and ${bookingById(b.bookingId).eventName}.`
+      detail: `${volunteer?.name || "A removed volunteer"} overlaps between ${firstBooking?.eventName || "a removed booking"} and ${secondBooking?.eventName || "a removed booking"}.`
     });
   });
 
   periodBookings.forEach((bookingItem) => {
     const room = roomById(bookingItem.roomId);
+    if (!room) return;
     if (bookingItem.expected > room.capacity) {
       alerts.push({
         level: "warning",
@@ -369,6 +442,14 @@ function collectAlerts() {
 
 function saveBooking(event) {
   event.preventDefault();
+  if (dataMode !== "true") {
+    els.bookingFeedback.textContent = "Switch to True data to create or edit real bookings.";
+    return;
+  }
+  if (!state.rooms.length) {
+    els.bookingFeedback.textContent = "Add at least one room in Admin settings before creating bookings.";
+    return;
+  }
   const current = {
     id: els.bookingId.value || uniqueId("b"),
     roomId: els.bookingRoom.value,
@@ -398,6 +479,7 @@ function saveBooking(event) {
 
   state.bookings = state.bookings.filter((item) => item.id !== current.id);
   state.bookings.push(...candidates);
+  persistTrueData();
   clearBookingForm();
   render();
 }
@@ -412,6 +494,10 @@ function clearBookingForm() {
 }
 
 function editBooking(id) {
+  if (dataMode !== "true") {
+    els.bookingFeedback.textContent = "Switch to True data to edit bookings.";
+    return;
+  }
   const bookingItem = bookingById(id);
   if (!bookingItem) return;
   els.bookingId.value = bookingItem.id;
@@ -431,13 +517,23 @@ function editBooking(id) {
 }
 
 function cancelBooking(id) {
+  if (dataMode !== "true") return;
   state.bookings = state.bookings.filter((item) => item.id !== id);
   state.assignments = state.assignments.filter((item) => item.bookingId !== id);
+  persistTrueData();
   render();
 }
 
 function saveAssignment(event) {
   event.preventDefault();
+  if (dataMode !== "true") {
+    els.assignmentFeedback.textContent = "Switch to True data to assign volunteers.";
+    return;
+  }
+  if (!state.volunteers.length || !state.bookings.length) {
+    els.assignmentFeedback.textContent = "Add volunteers and bookings before assigning duties.";
+    return;
+  }
   const current = {
     id: uniqueId("a"),
     volunteerId: els.assignmentVolunteer.value,
@@ -462,12 +558,17 @@ function saveAssignment(event) {
     return;
   }
   state.assignments.push(current);
+  persistTrueData();
   els.assignmentFeedback.textContent = "";
   render();
 }
 
 function saveAdminRecord(event) {
   event.preventDefault();
+  if (dataMode !== "true") {
+    els.dataFeedback.textContent = "Switch to True data before changing center settings.";
+    return;
+  }
   const roomName = els.adminRoomName.value.trim();
   const volunteerName = els.adminVolunteerName.value.trim();
   if (roomName) {
@@ -487,24 +588,69 @@ function saveAdminRecord(event) {
       restrictions: "None recorded"
     });
   }
+  persistTrueData();
   els.adminForm.reset();
   hydrateControls();
   render();
 }
 
+function exportTrueData() {
+  const data = dataMode === "true" ? state : loadTrueData();
+  download("meditation-center-true-data.json", JSON.stringify(normalizeData(data), null, 2), "application/json");
+  els.dataFeedback.textContent = "True data exported as JSON.";
+}
+
+function importTrueData(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = normalizeData(JSON.parse(String(reader.result)));
+      localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(imported));
+      dataMode = "true";
+      localStorage.setItem(DATA_MODE_KEY, "true");
+      state = imported;
+      hydrateControls();
+      els.dataFeedback.textContent = "Imported true data. Changes are saved in this browser.";
+      render();
+    } catch {
+      els.dataFeedback.textContent = "That file could not be imported. Use a JSON export from this app.";
+    } finally {
+      event.target.value = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetTrueData() {
+  const emptyData = createEmptyTrueData();
+  localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(emptyData));
+  if (dataMode === "true") {
+    state = emptyData;
+    hydrateControls();
+    clearBookingForm();
+    render();
+  }
+  els.dataFeedback.textContent = "True data has been reset. Demo data is unchanged.";
+}
+
 function updateAttendanceField(event) {
+  if (dataMode !== "true") return;
   const item = state.assignments.find((assignmentItem) => assignmentItem.id === event.target.dataset.id);
   if (!item) return;
   item[event.target.dataset.field] = event.target.value;
   if (event.target.dataset.field === "status" && event.target.value === "Absent") {
     item.noShows = Number(item.noShows || 0) + 1;
   }
+  persistTrueData();
   renderSummary();
   renderAlerts();
   renderReports();
 }
 
 function checkVolunteer(id, direction) {
+  if (dataMode !== "true") return;
   const item = state.assignments.find((assignmentItem) => assignmentItem.id === id);
   if (!item) return;
   const now = new Date();
@@ -516,6 +662,7 @@ function checkVolunteer(id, direction) {
     item.checkOut = stamp;
     if (item.status === "Pending") item.status = "Present";
   }
+  persistTrueData();
   render();
 }
 
@@ -574,7 +721,7 @@ function roomsOpenNow() {
 }
 
 function syncAssignmentEvents() {
-  const options = bookingsInPeriod(els.periodFilter?.value || "day").map((item) => [item.id, `${item.eventName} | ${roomById(item.roomId).name}`]);
+  const options = bookingsInPeriod(els.periodFilter?.value || "day").map((item) => [item.id, `${item.eventName} | ${roomById(item.roomId)?.name || "Room removed"}`]);
   fillSelect(els.assignmentEvent, options.length ? options : state.bookings.map((item) => [item.id, item.eventName]));
 }
 

@@ -13,6 +13,10 @@
         <h1>Stillwater Meditation Center</h1>
       </div>
       <div class="topbar-actions">
+        <div class="mode-switch" aria-label="Data mode">
+          <button id="demoMode" class="secondary-action" type="button">Demo</button>
+          <button id="trueDataMode" type="button">True data</button>
+        </div>
         <label class="field compact">
           <span>Date</span>
           <input id="activeDate" type="date">
@@ -26,6 +30,9 @@
             <option>Viewer</option>
           </select>
         </label>
+        <div class="mode-note">
+          <span id="dataModeLabel">True data</span>
+        </div>
       </div>
     </header>
 
@@ -277,6 +284,13 @@
               </label>
               <button type="submit">Add settings record</button>
             </form>
+            <div class="data-actions">
+              <button id="exportData" class="secondary-action" type="button">Export true data</button>
+              <button id="importData" class="secondary-action" type="button">Import true data</button>
+              <button id="resetTrueData" class="secondary-action" type="button">Reset true data</button>
+              <input id="importDataFile" type="file" accept="application/json,.json" hidden>
+            </div>
+            <div id="dataFeedback" class="form-feedback" aria-live="polite"></div>
             <div id="adminSummary" class="report-list"></div>
           </section>
         </aside>
