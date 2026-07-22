@@ -24,18 +24,18 @@ document.addEventListener("DOMContentLoaded", () => {
 function createDemoData() {
   return normalizeData({
     rooms: [
-      room("r1", "Maison Tara - Chambre 1", "Simple", "Maison Tara", 1, false, true, "Chambre calme pour retraitant individuel"),
-      room("r2", "Maison Tara - Chambre 2", "Twin", "Maison Tara", 2, false, true, "Deux lits separes, proche de l'accueil"),
+      room("r1", "Chambre 1", "Simple", "Maison principale", 1, false, true, "Chambre calme pour retraitant individuel"),
+      room("r2", "Chambre 2", "Twin", "Maison principale", 2, false, true, "Deux lits separes, proche de l'accueil"),
       room("r3", "Chambre du Jardin", "Double", "Maison du Jardin", 2, true, true, "Salle de bain privee, vue sur les jardins"),
-      room("r4", "Dortoir Samye", "Dortoir", "Maison de retraite", 6, false, true, "Dortoir pour retraite de groupe, lits numerotes"),
-      room("r5", "Chambre Lotus Famille", "Famille", "Maison d'accueil", 4, true, true, "Pour famille ou petit groupe lie a une retraite"),
-      room("r6", "Ermitage", "Ermitage", "Jardin haut", 1, false, false, "Reserve aux retraites silencieuses")
+      room("r4", "Dortoir", "Dortoir", "Maison principale", 6, false, true, "Dortoir pour retraite de groupe, lits numerotes"),
+      room("r5", "Chambre familiale", "Famille", "Maison d'accueil", 4, true, true, "Pour famille ou petit groupe lie a une retraite"),
+      room("r6", "Chambre retraite silencieuse", "Simple", "Jardin", 1, false, false, "Reserve aux retraites silencieuses")
     ],
     stays: [
       stay("s1", "r1", 1, "Claire Martin", "claire@example.com", isoDate, addDays(isoDate, 3), 1, "checked-in", "Retraite de meditation du week-end"),
       stay("s2", "r3", 1, "Jean Dupont", "+33 6 10 20 30 40", isoDate, addDays(isoDate, 2), 2, "confirmed", "Arrivee apres le repas du soir"),
-      stay("s3", "r4", 1, "Groupe retraite Chenrezig", "groupe@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Dortoir Samye - lit 1"),
-      stay("s5", "r4", 2, "Tenzin", "", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Dortoir Samye - lit 2"),
+      stay("s3", "r4", 1, "Groupe retraite Chenrezig", "groupe@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Dortoir - lit 1"),
+      stay("s5", "r4", 2, "Tenzin", "", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Dortoir - lit 2"),
       stay("s4", "r2", 1, "Sophie Bernard", "", addDays(isoDate, -2), isoDate, 1, "checked-out", "Offrande laissee au bureau d'accueil")
     ]
   });

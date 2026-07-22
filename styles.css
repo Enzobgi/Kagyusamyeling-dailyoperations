@@ -83,19 +83,13 @@ button:hover {
   gap: 0.85rem;
 }
 
-.brand-mark {
-  width: 3.2rem;
-  height: 3.2rem;
-  display: grid;
-  place-items: center;
-  border: 1px solid #c9d8c9;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 50% 46%, rgba(255, 253, 248, 0.96) 0 36%, transparent 37%),
-    conic-gradient(from 18deg, #315f4d, #8a6427, #557a64, #315f4d);
-  color: var(--accent-strong);
-  font-weight: 800;
-  box-shadow: 0 10px 24px rgba(49, 95, 77, 0.14);
+.brand-logo {
+  width: 9.4rem;
+  max-width: 32vw;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  background: #fff;
 }
 
 h1,
