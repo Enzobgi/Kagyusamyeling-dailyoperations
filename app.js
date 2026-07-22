@@ -32,10 +32,11 @@ function createDemoData() {
       room("r6", "Chambre 6", "Simple", "Maison d'accueil", 1, false, false, "Temporairement indisponible")
     ],
     stays: [
-      stay("s1", "r1", "Claire Martin", "claire@example.com", isoDate, addDays(isoDate, 3), 1, "checked-in", "Retraite de meditation du week-end"),
-      stay("s2", "r3", "Jean Dupont", "+33 6 10 20 30 40", isoDate, addDays(isoDate, 2), 2, "confirmed", "Arrivee apres le souper"),
-      stay("s3", "r4", "Groupe retraite lama", "group@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 5, "confirmed", "Garder les lits ensemble"),
-      stay("s4", "r2", "Sophie Bernard", "", addDays(isoDate, -2), isoDate, 1, "checked-out", "Don laisse au bureau")
+      stay("s1", "r1", 1, "Claire Martin", "claire@example.com", isoDate, addDays(isoDate, 3), 1, "checked-in", "Retraite de meditation du week-end"),
+      stay("s2", "r3", 1, "Jean Dupont", "+33 6 10 20 30 40", isoDate, addDays(isoDate, 2), 2, "confirmed", "Arrivee apres le souper"),
+      stay("s3", "r4", 1, "Groupe retraite lama", "group@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Lit 1 du dortoir"),
+      stay("s5", "r4", 2, "Tenzin", "", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Lit 2 du dortoir"),
+      stay("s4", "r2", 1, "Sophie Bernard", "", addDays(isoDate, -2), isoDate, 1, "checked-out", "Don laisse au bureau")
     ]
   });
 }
@@ -48,8 +49,8 @@ function room(id, name, type, area, beds, bathroom, active, notes) {
   return { id, name, type, area, beds: Number(beds || 1), bathroom: Boolean(bathroom), active: Boolean(active), notes: notes || "" };
 }
 
-function stay(id, roomId, guestName, contact, checkIn, checkOut, guests, status, notes) {
-  return { id, roomId, guestName, contact: contact || "", checkIn, checkOut, guests: Number(guests || 1), status, notes: notes || "" };
+function stay(id, roomId, bed, guestName, contact, checkIn, checkOut, guests, status, notes) {
+  return { id, roomId, bed: normalizeBed(bed), guestName, contact: contact || "", checkIn, checkOut, guests: Number(guests || 1), status, notes: notes || "" };
 }
 
 function normalizeData(data) {
@@ -67,6 +68,7 @@ function normalizeData(data) {
     stays: Array.isArray(data?.stays) ? data.stays.map((item) => stay(
       item.id || uniqueId("stay"),
       item.roomId || "",
+      item.bed || item.bedNumber || 1,
       item.guestName || item.eventName || "Invite",
       item.contact || item.organizer || "",
       item.checkIn || dateOnly(item.start) || isoDate,
@@ -114,7 +116,7 @@ function cacheElements() {
     "activeDate", "demoMode", "trueDataMode", "dataModeLabel", "accountStatus", "quickAddStay", "quickAddRoom", "stayPanel", "roomPanel", "roomCount", "occupiedCount",
     "availableCount", "arrivalCount", "searchInput", "roomStatusFilter", "roomsList",
     "monthPicker", "prevMonth", "nextMonth", "monthlyOccupancy", "stayStatusFilter", "exportCsv", "printSheet", "staysBody", "stayForm", "stayId",
-    "guestName", "stayRoom", "checkIn", "checkOut", "guestCount", "stayStatus", "guestContact",
+    "guestName", "stayRoom", "stayBed", "checkIn", "checkOut", "guestCount", "stayStatus", "guestContact",
     "stayNotes", "stayFeedback", "clearStay", "roomForm", "roomId", "roomName", "roomBeds",
     "roomType", "roomArea", "roomBathroom", "roomActive", "roomNotes", "roomFeedback",
     "clearRoom", "exportData", "importData", "resetTrueData", "importDataFile", "dataFeedback",
@@ -131,8 +133,20 @@ function hydrateControls() {
   if (!els.checkIn.value) els.checkIn.value = els.activeDate.value;
   if (!els.checkOut.value) els.checkOut.value = addDays(els.activeDate.value, 1);
   fillSelect(els.stayRoom, state.rooms.filter((roomItem) => roomItem.active).map((roomItem) => [roomItem.id, roomLabel(roomItem)]));
+  hydrateBedOptions();
   hydrateAccountControls();
   updateModeButtons();
+}
+
+function hydrateBedOptions(preferredBed = "") {
+  const roomItem = roomById(els.stayRoom.value);
+  const previous = preferredBed || els.stayBed.value || "1";
+  const options = roomItem ? bedUnits(roomItem).map((unit) => [String(unit.bed), unit.label]) : [];
+  fillSelect(els.stayBed, options);
+  if (options.some(([value]) => value === String(previous))) {
+    els.stayBed.value = String(previous);
+  }
+  els.stayBed.disabled = options.length <= 1;
 }
 
 function bindEvents() {
@@ -145,6 +159,7 @@ function bindEvents() {
   els.trueDataMode.addEventListener("click", () => switchDataMode("true"));
   els.quickAddStay.addEventListener("click", () => openEntryPanel(els.stayPanel, els.guestName));
   els.quickAddRoom.addEventListener("click", () => openEntryPanel(els.roomPanel, els.roomName));
+  els.stayRoom.addEventListener("change", () => hydrateBedOptions());
   els.roomForm.addEventListener("submit", saveRoom);
   els.stayForm.addEventListener("submit", saveStay);
   els.clearRoom.addEventListener("click", clearRoomForm);
@@ -180,11 +195,11 @@ function openEntryPanel(panel, focusTarget) {
 
 function renderSummary() {
   const rooms = activeRooms();
-  const occupied = rooms.filter((roomItem) => stayForRoomOnDate(roomItem.id, els.activeDate.value)).length;
+  const occupied = rooms.filter((roomItem) => staysForRoomOnDate(roomItem.id, els.activeDate.value).length).length;
   const arrivals = state.stays.filter((stayItem) => stayItem.checkIn === els.activeDate.value && stayItem.status !== "cancelled").length;
   els.roomCount.textContent = rooms.length;
   els.occupiedCount.textContent = occupied;
-  els.availableCount.textContent = Math.max(0, rooms.length - occupied);
+  els.availableCount.textContent = rooms.filter((roomItem) => availableBedsOnDate(roomItem.id, els.activeDate.value) > 0).length;
   els.arrivalCount.textContent = arrivals;
 }
 
@@ -202,7 +217,9 @@ function renderRooms() {
   }
 
   rooms.forEach((roomItem) => {
-    const stayItem = stayForRoomOnDate(roomItem.id, els.activeDate.value);
+    const roomStays = staysForRoomOnDate(roomItem.id, els.activeDate.value);
+    const occupiedBeds = new Set(roomStays.map((stayItem) => normalizeBed(stayItem.bed))).size;
+    const hasStay = occupiedBeds > 0;
     const canEdit = dataMode === "true";
     const card = document.createElement("article");
     card.className = "room-card";
@@ -212,11 +229,11 @@ function renderRooms() {
           <h3>${escapeHtml(roomItem.name)}</h3>
           <p class="muted">${escapeHtml(roomItem.type)} | ${roomItem.beds} lit${roomItem.beds === 1 ? "" : "s"}${roomItem.area ? ` | ${escapeHtml(roomItem.area)}` : ""}</p>
         </div>
-        <span class="pill ${stayItem ? "warning" : roomItem.active ? "" : "pending"}">${stayItem ? "Occupee" : roomItem.active ? "Libre" : "Fermee"}</span>
+        <span class="pill ${hasStay ? "warning" : roomItem.active ? "" : "pending"}">${roomStatusLabel(roomItem, occupiedBeds)}</span>
       </div>
       <div class="pill-row">
         ${roomItem.bathroom ? '<span class="pill">Salle de bain privee</span>' : '<span class="pill">Salle de bain partagee</span>'}
-        ${stayItem ? `<span class="pill">${escapeHtml(stayItem.guestName)}</span>` : ""}
+        ${roomStays.map((stayItem) => `<span class="pill">${escapeHtml(bedLabel(stayItem.bed))} : ${escapeHtml(stayItem.guestName)}</span>`).join("")}
       </div>
       <p class="muted">${escapeHtml(roomItem.notes || "Aucune note")}</p>
       <div class="button-row" ${canEdit ? "" : "hidden"}>
@@ -257,7 +274,7 @@ function renderStays() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><strong>${escapeHtml(stayItem.guestName)}</strong></td>
-      <td>${escapeHtml(roomItem?.name || "Chambre supprimee")}</td>
+      <td>${escapeHtml(roomItem ? `${roomItem.name} - ${bedLabel(stayItem.bed)}` : "Chambre supprimee")}</td>
       <td>${formatDate(stayItem.checkIn)} - ${formatDate(stayItem.checkOut)}</td>
       <td>${stayItem.guests}</td>
       <td><span class="pill ${statusClass(stayItem.status)}">${escapeHtml(statusLabel(stayItem.status))}</span></td>
@@ -283,9 +300,10 @@ function renderStays() {
 
 function renderMonthlyOccupancy() {
   const rooms = state.rooms.filter((roomItem) => roomItem.active || monthHasStay(roomItem.id));
+  const units = rooms.flatMap((roomItem) => bedUnits(roomItem));
   const days = daysInSelectedMonth();
   els.monthlyOccupancy.innerHTML = "";
-  if (!rooms.length) {
+  if (!units.length) {
     els.monthlyOccupancy.append(emptyState());
     return;
   }
@@ -298,10 +316,10 @@ function renderMonthlyOccupancy() {
     grid.append(monthCell(String(new Date(`${day}T00:00`).getDate()), `month-head ${day === isoDate ? "today" : ""}`, shortWeekday(day)));
   });
 
-  rooms.forEach((roomItem) => {
-    grid.append(monthCell(roomItem.name, "month-room sticky-room", `${roomItem.type} | ${roomItem.beds} lit${roomItem.beds === 1 ? "" : "s"}`));
+  units.forEach((unit) => {
+    grid.append(monthCell(unit.title, "month-room sticky-room", unit.meta));
     days.forEach((day) => {
-      const stayItem = stayForRoomOnDate(roomItem.id, day);
+      const stayItem = stayForBedOnDate(unit.roomId, unit.bed, day);
       const classes = ["month-cell"];
       if (stayItem) classes.push("occupied");
       if (day === isoDate) classes.push("today");
@@ -333,7 +351,7 @@ function daysInSelectedMonth() {
 
 function monthHasStay(roomId) {
   const days = daysInSelectedMonth();
-  return days.some((day) => stayForRoomOnDate(roomId, day));
+  return days.some((day) => staysForRoomOnDate(roomId, day).length);
 }
 
 function shiftMonth(amount) {
@@ -539,6 +557,7 @@ function saveStay(event) {
   const current = stay(
     els.stayId.value || uniqueId("stay"),
     els.stayRoom.value,
+    els.stayBed.value,
     els.guestName.value.trim(),
     els.guestContact.value.trim(),
     els.checkIn.value,
@@ -556,7 +575,7 @@ function saveStay(event) {
     return;
   }
   if (hasRoomConflict(current, state.stays.filter((item) => item.id !== current.id))) {
-    els.stayFeedback.textContent = "Cette chambre est deja reservee sur ces dates.";
+    els.stayFeedback.textContent = "Ce lit est deja reserve sur ces dates.";
     return;
   }
   state.stays = state.stays.filter((item) => item.id !== current.id);
@@ -590,6 +609,7 @@ function editStay(id) {
   els.stayId.value = stayItem.id;
   els.guestName.value = stayItem.guestName;
   els.stayRoom.value = stayItem.roomId;
+  hydrateBedOptions(stayItem.bed);
   els.checkIn.value = stayItem.checkIn;
   els.checkOut.value = stayItem.checkOut;
   els.guestCount.value = stayItem.guests;
@@ -632,6 +652,7 @@ function clearStayForm() {
   els.checkIn.value = els.activeDate.value;
   els.checkOut.value = addDays(els.activeDate.value, 1);
   els.guestCount.value = "1";
+  hydrateBedOptions();
   els.stayStatus.value = "confirmed";
   els.stayFeedback.textContent = "";
 }
@@ -701,6 +722,7 @@ function exportStaysCsv() {
     return {
       Nom: stayItem.guestName,
       Chambre: roomItem?.name || "Chambre supprimee",
+      Lit: bedLabel(stayItem.bed),
       Arrivee: stayItem.checkIn,
       Depart: stayItem.checkOut,
       Personnes: stayItem.guests,
@@ -723,31 +745,42 @@ function activeRooms() {
 }
 
 function matchesRoomFilter(roomItem, filter) {
-  const occupied = Boolean(stayForRoomOnDate(roomItem.id, els.activeDate.value));
-  if (filter === "available") return roomItem.active && !occupied;
-  if (filter === "occupied") return occupied;
+  const occupiedBeds = staysForRoomOnDate(roomItem.id, els.activeDate.value).length;
+  if (filter === "available") return roomItem.active && occupiedBeds < roomItem.beds;
+  if (filter === "occupied") return occupiedBeds > 0;
   return true;
 }
 
-function stayForRoomOnDate(roomId, date) {
-  return state.stays.find((stayItem) => stayItem.roomId === roomId && stayItem.status !== "cancelled" && date >= stayItem.checkIn && date < stayItem.checkOut);
+function staysForRoomOnDate(roomId, date) {
+  return state.stays.filter((stayItem) => stayItem.roomId === roomId && stayItem.status !== "cancelled" && date >= stayItem.checkIn && date < stayItem.checkOut);
+}
+
+function stayForBedOnDate(roomId, bed, date) {
+  return state.stays.find((stayItem) => stayItem.roomId === roomId && normalizeBed(stayItem.bed) === normalizeBed(bed) && stayItem.status !== "cancelled" && date >= stayItem.checkIn && date < stayItem.checkOut);
+}
+
+function availableBedsOnDate(roomId, date) {
+  const roomItem = roomById(roomId);
+  if (!roomItem?.active) return 0;
+  const occupiedBeds = new Set(staysForRoomOnDate(roomId, date).map((stayItem) => normalizeBed(stayItem.bed))).size;
+  return Math.max(0, roomItem.beds - occupiedBeds);
 }
 
 function hasRoomConflict(candidate, stays) {
   if (candidate.status === "cancelled") return false;
-  return stays.some((stayItem) => stayItem.status !== "cancelled" && stayItem.roomId === candidate.roomId && candidate.checkIn < stayItem.checkOut && candidate.checkOut > stayItem.checkIn);
+  return stays.some((stayItem) => stayItem.status !== "cancelled" && stayItem.roomId === candidate.roomId && normalizeBed(stayItem.bed) === normalizeBed(candidate.bed) && candidate.checkIn < stayItem.checkOut && candidate.checkOut > stayItem.checkIn);
 }
 
 function roomMatchesSearch(roomItem, query) {
   if (!query) return true;
-  const stayItem = stayForRoomOnDate(roomItem.id, els.activeDate.value);
-  return [roomItem.name, roomItem.type, roomItem.area, roomItem.notes, stayItem?.guestName].join(" ").toLowerCase().includes(query);
+  const stayNames = staysForRoomOnDate(roomItem.id, els.activeDate.value).map((stayItem) => `${bedLabel(stayItem.bed)} ${stayItem.guestName}`);
+  return [roomItem.name, roomItem.type, roomItem.area, roomItem.notes, ...stayNames].join(" ").toLowerCase().includes(query);
 }
 
 function stayMatchesSearch(stayItem, query) {
   if (!query) return true;
   const roomItem = roomById(stayItem.roomId);
-  return [stayItem.guestName, stayItem.contact, stayItem.notes, stayItem.status, roomItem?.name].join(" ").toLowerCase().includes(query);
+  return [stayItem.guestName, stayItem.contact, stayItem.notes, stayItem.status, roomItem?.name, bedLabel(stayItem.bed)].join(" ").toLowerCase().includes(query);
 }
 
 function searchQuery() {
@@ -775,7 +808,36 @@ function fillSelect(select, options) {
 }
 
 function roomLabel(roomItem) {
-  return `${roomItem.name} (${roomItem.type}, ${roomItem.beds} bed${roomItem.beds === 1 ? "" : "s"})`;
+  return `${roomItem.name} (${roomItem.type}, ${roomItem.beds} lit${roomItem.beds === 1 ? "" : "s"})`;
+}
+
+function bedUnits(roomItem) {
+  return Array.from({ length: Math.max(1, Number(roomItem.beds || 1)) }, (_, index) => {
+    const bed = index + 1;
+    return {
+      roomId: roomItem.id,
+      bed,
+      label: bedLabel(bed),
+      title: roomItem.beds > 1 ? `${roomItem.name} - ${bedLabel(bed)}` : roomItem.name,
+      meta: roomItem.beds > 1 ? `${roomItem.type} | ${bedLabel(bed)}` : `${roomItem.type} | 1 lit`
+    };
+  });
+}
+
+function bedLabel(bed) {
+  return `Lit ${normalizeBed(bed)}`;
+}
+
+function normalizeBed(bed) {
+  const number = Number(bed || 1);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : 1;
+}
+
+function roomStatusLabel(roomItem, occupiedBeds) {
+  if (!roomItem.active) return "Fermee";
+  if (!occupiedBeds) return "Libre";
+  if (occupiedBeds >= roomItem.beds) return "Complete";
+  return `${occupiedBeds}/${roomItem.beds} lits occupes`;
 }
 
 function statusLabel(status) {

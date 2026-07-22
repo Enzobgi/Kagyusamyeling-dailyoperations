@@ -5,10 +5,11 @@ A static web app for managing sleeping rooms and guest stays.
 ## Features
 
 - Simple sleeping-room list with room type, beds, area, bathroom, active/inactive, and notes
-- Guest stays with check-in, check-out, status, people count, contact, and notes
-- Double-booking prevention for sleeping rooms
+- Guest stays with check-in, check-out, room, bed, status, people count, contact, and notes
+- Double-booking prevention by bed, useful for dormitories and shared rooms
 - Occupied, available, and arrival counts for the selected date
 - Monthly occupancy grid with all rooms together
+- Monthly occupancy grid with separate rows for each bed in multi-bed rooms
 - Demo and true-data modes, with true data saved in the browser
 - User accounts and shared data across devices with Neon Postgres
 - JSON import/export for true data
