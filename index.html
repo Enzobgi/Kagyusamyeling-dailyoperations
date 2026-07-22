@@ -3,19 +3,22 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Kagyu Samye Ling - Les Jardins de Meditation</title>
+    <title>Samye - Les Jardins de Meditation</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Kagyu Samye Ling</p>
-        <h1>Les Jardins de Meditation</h1>
-        <p class="subtitle">Gestion simple des chambres et des sejours</p>
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true">S</div>
+        <div>
+          <p class="eyebrow">Samye</p>
+          <h1>Les Jardins de Meditation</h1>
+          <p class="subtitle">Carnet d'accueil des retraites, chambres et dortoirs</p>
+        </div>
       </div>
       <div class="topbar-actions">
         <div class="quick-actions" aria-label="Actions rapides">
-          <button id="quickAddStay" type="button">Nouveau sejour</button>
+          <button id="quickAddStay" type="button">Nouvelle arrivee</button>
           <button id="quickAddRoom" class="secondary-action" type="button">Ajouter chambre</button>
         </div>
         <div class="mode-switch" aria-label="Data mode">
@@ -37,20 +40,28 @@
       <section class="summary-band" aria-label="Daily room summary">
         <article>
           <span id="roomCount">0</span>
-          <p>chambres</p>
+          <p>lieux d'accueil</p>
         </article>
         <article>
           <span id="occupiedCount">0</span>
-          <p>occupees ce soir</p>
+          <p>occupes ce soir</p>
         </article>
         <article>
           <span id="availableCount">0</span>
-          <p>libres ce soir</p>
+          <p>avec un lit libre</p>
         </article>
         <article>
           <span id="arrivalCount">0</span>
-          <p>arrivees aujourd'hui</p>
+          <p>arrivees a accueillir</p>
         </article>
+      </section>
+
+      <section class="samye-note" aria-label="Repere Jardins de Meditation">
+        <div>
+          <p class="eyebrow">Carnet Samye</p>
+          <h2>Accueil des retraitants aux Jardins</h2>
+        </div>
+        <p>Retraitants, visiteurs, benevoles, chambres, dortoirs et lits du centre.</p>
       </section>
 
       <section class="workspace-grid">
@@ -58,11 +69,11 @@
           <section aria-labelledby="roomsTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Chambres</p>
-                <h2 id="roomsTitle">Vue du jour</h2>
+                <p class="eyebrow">Accueil Samye</p>
+                <h2 id="roomsTitle">Chambres et dortoirs du jour</h2>
               </div>
               <div class="toolbar">
-                <input id="searchInput" type="search" placeholder="Rechercher chambre, personne, note">
+                <input id="searchInput" type="search" placeholder="Rechercher retraitant, chambre, lit, note">
                 <select id="roomStatusFilter" aria-label="Filtre chambres">
                   <option value="all">Toutes</option>
                   <option value="available">Libres</option>
@@ -76,8 +87,8 @@
           <section aria-labelledby="monthTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Planning</p>
-                <h2 id="monthTitle">Occupation mensuelle</h2>
+                <p class="eyebrow">Vue retraite</p>
+                <h2 id="monthTitle">Occupation mensuelle par lit</h2>
               </div>
               <div class="toolbar">
                 <button id="prevMonth" class="secondary-action" type="button">Mois precedent</button>
@@ -94,8 +105,8 @@
           <section aria-labelledby="staysTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Reservations</p>
-                <h2 id="staysTitle">Sejours</h2>
+                <p class="eyebrow">Registre</p>
+                <h2 id="staysTitle">Retraitants et sejours</h2>
               </div>
               <div class="toolbar">
                 <select id="stayStatusFilter" aria-label="Filtre sejours">
@@ -116,7 +127,7 @@
                     <th>Personne</th>
                     <th>Chambre / lit</th>
                     <th>Dates</th>
-                    <th>Nb</th>
+                    <th>Pers.</th>
                     <th>Statut</th>
                     <th>Contact</th>
                     <th>Notes</th>
@@ -134,18 +145,18 @@
             <details class="entry-details" open>
               <summary class="section-heading">
                 <div>
-                  <p class="eyebrow">Saisie</p>
-                  <h2 id="quickStayTitle">Nouveau sejour</h2>
+                  <p class="eyebrow">Accueil</p>
+                  <h2 id="quickStayTitle">Nouvelle arrivee</h2>
                 </div>
               </summary>
               <form id="stayForm" class="form-grid">
                 <input id="stayId" type="hidden">
                 <label class="field">
                   <span>Nom</span>
-                  <input id="guestName" required placeholder="Nom de la personne ou du groupe">
+                  <input id="guestName" required placeholder="Retraitant, visiteur, benevole ou groupe">
                 </label>
                 <label class="field">
-                  <span>Chambre</span>
+                  <span>Lieu d'accueil</span>
                   <select id="stayRoom" required></select>
                 </label>
                 <label class="field">
@@ -164,7 +175,7 @@
                 </div>
                 <div class="two-col">
                   <label class="field">
-                    <span>Personnes</span>
+                  <span>Personnes</span>
                     <input id="guestCount" type="number" min="1" value="1">
                   </label>
                   <label class="field">
@@ -182,8 +193,8 @@
                   <input id="guestContact" placeholder="Telephone ou email">
                 </label>
                 <label class="field">
-                  <span>Notes</span>
-                  <textarea id="stayNotes" rows="3" placeholder="Repas, accessibilite, retraite, paiement"></textarea>
+                  <span>Notes d'accueil</span>
+                  <textarea id="stayNotes" rows="3" placeholder="Retraite, repas, accessibilite, offrande, transport"></textarea>
                 </label>
                 <div id="stayFeedback" class="form-feedback" aria-live="polite"></div>
                 <div class="button-row">
@@ -198,16 +209,16 @@
             <details class="entry-details">
               <summary class="section-heading">
                 <div>
-                  <p class="eyebrow">Chambres</p>
-                  <h2 id="quickRoomTitle">Ajouter une chambre</h2>
+                  <p class="eyebrow">Lieux</p>
+                  <h2 id="quickRoomTitle">Ajouter chambre ou dortoir</h2>
                 </div>
               </summary>
               <form id="roomForm" class="form-grid">
                 <input id="roomId" type="hidden">
                 <div class="two-col">
                   <label class="field">
-                    <span>Numero ou nom</span>
-                    <input id="roomName" required placeholder="Chambre 12">
+                    <span>Nom du lieu</span>
+                    <input id="roomName" required placeholder="Maison Tara - Chambre 1">
                   </label>
                   <label class="field">
                     <span>Lits</span>
@@ -218,16 +229,17 @@
                   <label class="field">
                     <span>Type</span>
                     <select id="roomType">
-                      <option>Single</option>
+                      <option>Simple</option>
                       <option>Twin</option>
                       <option>Double</option>
-                      <option>Dormitory</option>
-                      <option>Family</option>
+                      <option>Dortoir</option>
+                      <option>Famille</option>
+                      <option>Ermitage</option>
                     </select>
                   </label>
                   <label class="field">
-                    <span>Batiment</span>
-                    <input id="roomArea" placeholder="Maison principale, aile jardin">
+                    <span>Maison / zone</span>
+                    <input id="roomArea" placeholder="Maison Tara, Maison du Jardin, Dortoir">
                   </label>
                 </div>
                 <label class="checkline">
@@ -236,11 +248,11 @@
                 </label>
                 <label class="checkline">
                   <input id="roomActive" type="checkbox" checked>
-                  <span>Disponible a la reservation</span>
+                  <span>Disponible pour l'accueil</span>
                 </label>
                 <label class="field">
-                  <span>Notes chambre</span>
-                  <textarea id="roomNotes" rows="3" placeholder="Calme, escaliers, accessible, proche jardin"></textarea>
+                  <span>Notes du lieu</span>
+                  <textarea id="roomNotes" rows="3" placeholder="Calme, proche jardin, escaliers, draps, menage, accessibilite"></textarea>
                 </label>
                 <div id="roomFeedback" class="form-feedback" aria-live="polite"></div>
                 <div class="button-row">

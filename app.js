@@ -24,19 +24,19 @@ document.addEventListener("DOMContentLoaded", () => {
 function createDemoData() {
   return normalizeData({
     rooms: [
-      room("r1", "Chambre 1", "Simple", "Maison principale", 1, false, true, "Chambre calme pres de la salle de meditation"),
-      room("r2", "Chambre 2", "Twin", "Maison principale", 2, false, true, "Pratique pour deux retraitants"),
-      room("r3", "Chambre Jardin", "Double", "Aile jardin", 2, true, true, "Salle de bain privee, vue jardin"),
-      room("r4", "Dortoir A", "Dortoir", "Maison de retraite", 6, false, true, "Chambre partagee pour retraites de groupe"),
-      room("r5", "Chambre Famille", "Famille", "Maison d'accueil", 4, true, true, "Adaptee a une petite famille"),
-      room("r6", "Chambre 6", "Simple", "Maison d'accueil", 1, false, false, "Temporairement indisponible")
+      room("r1", "Maison Tara - Chambre 1", "Simple", "Maison Tara", 1, false, true, "Chambre calme pour retraitant individuel"),
+      room("r2", "Maison Tara - Chambre 2", "Twin", "Maison Tara", 2, false, true, "Deux lits separes, proche de l'accueil"),
+      room("r3", "Chambre du Jardin", "Double", "Maison du Jardin", 2, true, true, "Salle de bain privee, vue sur les jardins"),
+      room("r4", "Dortoir Samye", "Dortoir", "Maison de retraite", 6, false, true, "Dortoir pour retraite de groupe, lits numerotes"),
+      room("r5", "Chambre Lotus Famille", "Famille", "Maison d'accueil", 4, true, true, "Pour famille ou petit groupe lie a une retraite"),
+      room("r6", "Ermitage", "Ermitage", "Jardin haut", 1, false, false, "Reserve aux retraites silencieuses")
     ],
     stays: [
       stay("s1", "r1", 1, "Claire Martin", "claire@example.com", isoDate, addDays(isoDate, 3), 1, "checked-in", "Retraite de meditation du week-end"),
-      stay("s2", "r3", 1, "Jean Dupont", "+33 6 10 20 30 40", isoDate, addDays(isoDate, 2), 2, "confirmed", "Arrivee apres le souper"),
-      stay("s3", "r4", 1, "Groupe retraite lama", "group@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Lit 1 du dortoir"),
-      stay("s5", "r4", 2, "Tenzin", "", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Lit 2 du dortoir"),
-      stay("s4", "r2", 1, "Sophie Bernard", "", addDays(isoDate, -2), isoDate, 1, "checked-out", "Don laisse au bureau")
+      stay("s2", "r3", 1, "Jean Dupont", "+33 6 10 20 30 40", isoDate, addDays(isoDate, 2), 2, "confirmed", "Arrivee apres le repas du soir"),
+      stay("s3", "r4", 1, "Groupe retraite Chenrezig", "groupe@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Dortoir Samye - lit 1"),
+      stay("s5", "r4", 2, "Tenzin", "", addDays(isoDate, 1), addDays(isoDate, 6), 1, "confirmed", "Dortoir Samye - lit 2"),
+      stay("s4", "r2", 1, "Sophie Bernard", "", addDays(isoDate, -2), isoDate, 1, "checked-out", "Offrande laissee au bureau d'accueil")
     ]
   });
 }
@@ -57,7 +57,7 @@ function normalizeData(data) {
   return {
     rooms: Array.isArray(data?.rooms) ? data.rooms.map((item) => room(
       item.id || uniqueId("room"),
-      item.name || "Chambre sans nom",
+      item.name || "Lieu sans nom",
       item.type || "Simple",
       item.area || "",
       item.beds || item.capacity || 1,
@@ -69,7 +69,7 @@ function normalizeData(data) {
       item.id || uniqueId("stay"),
       item.roomId || "",
       item.bed || item.bedNumber || 1,
-      item.guestName || item.eventName || "Invite",
+      item.guestName || item.eventName || "Retraitant",
       item.contact || item.organizer || "",
       item.checkIn || dateOnly(item.start) || isoDate,
       item.checkOut || dateOnly(item.end) || addDays(isoDate, 1),
@@ -368,8 +368,8 @@ function shortWeekday(day) {
 function renderDataSummary() {
   els.dataSummary.innerHTML = "";
   [
-    ["Chambres", `${state.rooms.length} au total, ${activeRooms().length} ouvertes`],
-    ["Sejours", `${state.stays.length} enregistres`],
+    ["Lieux d'accueil", `${state.rooms.length} au total, ${activeRooms().length} ouverts`],
+    ["Sejours Samye", `${state.stays.length} enregistres`],
     ["Mode", dataMode === "true" ? "Donnees reelles" : "Demo fictive"],
     ["Compte", authSession?.user?.email || "Non connecte"]
   ].forEach(([title, body]) => {
@@ -536,7 +536,7 @@ function saveRoom(event) {
     els.roomNotes.value.trim()
   );
   if (!current.name) {
-    els.roomFeedback.textContent = "Le nom ou numero de chambre est requis.";
+    els.roomFeedback.textContent = "Le nom du lieu d'accueil est requis.";
     return;
   }
   state.rooms = state.rooms.filter((item) => item.id !== current.id);
@@ -544,14 +544,14 @@ function saveRoom(event) {
   persistTrueData();
   clearRoomForm();
   render();
-  els.roomFeedback.textContent = "Chambre enregistree.";
+  els.roomFeedback.textContent = "Lieu d'accueil enregistre.";
 }
 
 function saveStay(event) {
   event.preventDefault();
   if (!canEditTrueData(els.stayFeedback)) return;
   if (!activeRooms().length) {
-    els.stayFeedback.textContent = "Ajoutez d'abord une chambre disponible.";
+    els.stayFeedback.textContent = "Ajoutez d'abord un lieu d'accueil disponible.";
     return;
   }
   const current = stay(
@@ -567,7 +567,7 @@ function saveStay(event) {
     els.stayNotes.value.trim()
   );
   if (!current.guestName) {
-    els.stayFeedback.textContent = "Le nom est requis.";
+    els.stayFeedback.textContent = "Le nom du retraitant, visiteur ou groupe est requis.";
     return;
   }
   if (new Date(current.checkOut) <= new Date(current.checkIn)) {
@@ -583,7 +583,7 @@ function saveStay(event) {
   persistTrueData();
   clearStayForm();
   render();
-  els.stayFeedback.textContent = "Sejour enregistre.";
+  els.stayFeedback.textContent = "Sejour Samye enregistre.";
 }
 
 function editRoom(id) {
@@ -721,7 +721,7 @@ function exportStaysCsv() {
     const roomItem = roomById(stayItem.roomId);
     return {
       Nom: stayItem.guestName,
-      Chambre: roomItem?.name || "Chambre supprimee",
+      Lieu: roomItem?.name || "Lieu supprime",
       Lit: bedLabel(stayItem.bed),
       Arrivee: stayItem.checkIn,
       Depart: stayItem.checkOut,

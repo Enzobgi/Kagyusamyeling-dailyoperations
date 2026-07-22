@@ -1,14 +1,15 @@
-# Kagyu Samye Ling - Les Jardins de Meditation
+# Samye - Les Jardins de Meditation
 
-A static web app for managing sleeping rooms and guest stays.
+A small internal welcome desk app for managing retreatant stays, rooms, dormitory beds, and shared accommodation data for Les Jardins de Meditation de Samye.
 
 ## Features
 
-- Simple sleeping-room list with room type, beds, area, bathroom, active/inactive, and notes
-- Guest stays with check-in, check-out, room, bed, status, people count, contact, and notes
+- Personalized Samye welcome dashboard for retreatants, visitors, volunteers, rooms, dormitories, and beds
+- Accommodation list with room type, beds, house/zone, bathroom, active/inactive, and notes
+- Retreatant stays with check-in, check-out, place, bed, status, people count, contact, and welcome notes
 - Double-booking prevention by bed, useful for dormitories and shared rooms
-- Occupied, available, and arrival counts for the selected date
-- Monthly occupancy grid with all rooms together
+- Occupied places, places with a free bed, and arrivals for the selected date
+- Monthly occupancy grid with all rooms and dormitories together
 - Monthly occupancy grid with separate rows for each bed in multi-bed rooms
 - Demo and true-data modes, with true data saved in the browser
 - User accounts and shared data across devices with Neon Postgres
