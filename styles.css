@@ -118,6 +118,7 @@ h3 {
 .button-row,
 .two-col,
 .mode-switch,
+.quick-actions,
 .data-actions {
   display: flex;
   gap: 0.65rem;
@@ -141,8 +142,12 @@ h3 {
 }
 
 .mode-note {
-  min-width: 5.6rem;
-  color: var(--muted);
+  min-width: max-content;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border: 1px solid #cddccb;
+  border-radius: 999px;
+  padding: 0.42rem 0.7rem;
   font-size: 0.82rem;
   font-weight: 650;
 }
@@ -202,6 +207,59 @@ h3 {
 .side-stack > section {
   padding: 1rem;
   min-width: 0;
+}
+
+.side-stack > section {
+  padding: 0;
+  overflow: hidden;
+}
+
+.entry-details {
+  padding: 0;
+}
+
+.entry-details > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1rem;
+  margin: 0;
+}
+
+.entry-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.entry-details > summary::after {
+  content: "+";
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  font-weight: 800;
+}
+
+.entry-details[open] > summary::after {
+  content: "-";
+}
+
+.entry-details > form,
+.entry-details > .data-actions,
+.entry-details > .form-feedback,
+.entry-details > .report-list {
+  margin-inline: 1rem;
+}
+
+.entry-details > form,
+.entry-details > .report-list {
+  padding-bottom: 1rem;
+}
+
+.entry-details > .data-actions {
+  margin-bottom: 0.75rem;
 }
 
 .section-heading {
@@ -269,6 +327,10 @@ textarea {
   color: var(--danger);
   min-height: 1.15rem;
   font-size: 0.85rem;
+}
+
+.form-feedback.neutral {
+  color: var(--muted);
 }
 
 .data-actions {
@@ -463,6 +525,15 @@ tr:last-child td {
   margin-bottom: 0.25rem;
 }
 
+.compact-list {
+  gap: 0.45rem;
+}
+
+.compact-list .report-card {
+  padding: 0.65rem 0.75rem;
+  box-shadow: none;
+}
+
 .empty-state {
   border: 1px dashed var(--line);
   border-radius: 8px;
@@ -486,6 +557,7 @@ tr:last-child td {
   .section-heading,
   .topbar-actions,
   .toolbar,
+  .quick-actions,
   .mode-switch {
     align-items: stretch;
     flex-direction: column;

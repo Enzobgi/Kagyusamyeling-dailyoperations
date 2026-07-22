@@ -24,18 +24,18 @@ document.addEventListener("DOMContentLoaded", () => {
 function createDemoData() {
   return normalizeData({
     rooms: [
-      room("r1", "Room 1", "Single", "Main house", 1, false, true, "Quiet room near the meditation hall"),
-      room("r2", "Room 2", "Twin", "Main house", 2, false, true, "Good for two retreatants"),
-      room("r3", "Garden Room", "Double", "Garden wing", 2, true, true, "Private bathroom, garden view"),
-      room("r4", "Dorm A", "Dormitory", "Retreat house", 6, false, true, "Shared room for group retreats"),
-      room("r5", "Family Room", "Family", "Guest house", 4, true, true, "Best for a small family"),
-      room("r6", "Room 6", "Single", "Guest house", 1, false, false, "Temporarily unavailable")
+      room("r1", "Chambre 1", "Simple", "Maison principale", 1, false, true, "Chambre calme pres de la salle de meditation"),
+      room("r2", "Chambre 2", "Twin", "Maison principale", 2, false, true, "Pratique pour deux retraitants"),
+      room("r3", "Chambre Jardin", "Double", "Aile jardin", 2, true, true, "Salle de bain privee, vue jardin"),
+      room("r4", "Dortoir A", "Dortoir", "Maison de retraite", 6, false, true, "Chambre partagee pour retraites de groupe"),
+      room("r5", "Chambre Famille", "Famille", "Maison d'accueil", 4, true, true, "Adaptee a une petite famille"),
+      room("r6", "Chambre 6", "Simple", "Maison d'accueil", 1, false, false, "Temporairement indisponible")
     ],
     stays: [
-      stay("s1", "r1", "Claire Martin", "claire@example.com", isoDate, addDays(isoDate, 3), 1, "checked-in", "Weekend meditation retreat"),
-      stay("s2", "r3", "Jean Dupont", "+33 6 10 20 30 40", isoDate, addDays(isoDate, 2), 2, "confirmed", "Arriving after supper"),
-      stay("s3", "r4", "Lama retreat group", "group@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 5, "confirmed", "Keep beds together"),
-      stay("s4", "r2", "Sophie Bernard", "", addDays(isoDate, -2), isoDate, 1, "checked-out", "Left donation at office")
+      stay("s1", "r1", "Claire Martin", "claire@example.com", isoDate, addDays(isoDate, 3), 1, "checked-in", "Retraite de meditation du week-end"),
+      stay("s2", "r3", "Jean Dupont", "+33 6 10 20 30 40", isoDate, addDays(isoDate, 2), 2, "confirmed", "Arrivee apres le souper"),
+      stay("s3", "r4", "Groupe retraite lama", "group@example.com", addDays(isoDate, 1), addDays(isoDate, 6), 5, "confirmed", "Garder les lits ensemble"),
+      stay("s4", "r2", "Sophie Bernard", "", addDays(isoDate, -2), isoDate, 1, "checked-out", "Don laisse au bureau")
     ]
   });
 }
@@ -56,8 +56,8 @@ function normalizeData(data) {
   return {
     rooms: Array.isArray(data?.rooms) ? data.rooms.map((item) => room(
       item.id || uniqueId("room"),
-      item.name || "Unnamed room",
-      item.type || "Single",
+      item.name || "Chambre sans nom",
+      item.type || "Simple",
       item.area || "",
       item.beds || item.capacity || 1,
       item.bathroom || false,
@@ -67,7 +67,7 @@ function normalizeData(data) {
     stays: Array.isArray(data?.stays) ? data.stays.map((item) => stay(
       item.id || uniqueId("stay"),
       item.roomId || "",
-      item.guestName || item.eventName || "Guest",
+      item.guestName || item.eventName || "Invite",
       item.contact || item.organizer || "",
       item.checkIn || dateOnly(item.start) || isoDate,
       item.checkOut || dateOnly(item.end) || addDays(isoDate, 1),
@@ -111,7 +111,7 @@ function loadAuthSession() {
 
 function cacheElements() {
   [
-    "activeDate", "demoMode", "trueDataMode", "dataModeLabel", "roomCount", "occupiedCount",
+    "activeDate", "demoMode", "trueDataMode", "dataModeLabel", "accountStatus", "quickAddStay", "quickAddRoom", "stayPanel", "roomPanel", "roomCount", "occupiedCount",
     "availableCount", "arrivalCount", "searchInput", "roomStatusFilter", "roomsList",
     "monthPicker", "prevMonth", "nextMonth", "monthlyOccupancy", "stayStatusFilter", "exportCsv", "printSheet", "staysBody", "stayForm", "stayId",
     "guestName", "stayRoom", "checkIn", "checkOut", "guestCount", "stayStatus", "guestContact",
@@ -143,6 +143,8 @@ function bindEvents() {
   els.nextMonth.addEventListener("click", () => shiftMonth(1));
   els.demoMode.addEventListener("click", () => switchDataMode("demo"));
   els.trueDataMode.addEventListener("click", () => switchDataMode("true"));
+  els.quickAddStay.addEventListener("click", () => openEntryPanel(els.stayPanel, els.guestName));
+  els.quickAddRoom.addEventListener("click", () => openEntryPanel(els.roomPanel, els.roomName));
   els.roomForm.addEventListener("submit", saveRoom);
   els.stayForm.addEventListener("submit", saveStay);
   els.clearRoom.addEventListener("click", clearRoomForm);
@@ -167,6 +169,13 @@ function render() {
   renderMonthlyOccupancy();
   renderStays();
   renderDataSummary();
+}
+
+function openEntryPanel(panel, focusTarget) {
+  const details = panel?.querySelector("details");
+  if (details) details.open = true;
+  panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => focusTarget?.focus(), 180);
 }
 
 function renderSummary() {
@@ -201,18 +210,18 @@ function renderRooms() {
       <div class="room-card-head">
         <div>
           <h3>${escapeHtml(roomItem.name)}</h3>
-          <p class="muted">${escapeHtml(roomItem.type)} | ${roomItem.beds} bed${roomItem.beds === 1 ? "" : "s"}${roomItem.area ? ` | ${escapeHtml(roomItem.area)}` : ""}</p>
+          <p class="muted">${escapeHtml(roomItem.type)} | ${roomItem.beds} lit${roomItem.beds === 1 ? "" : "s"}${roomItem.area ? ` | ${escapeHtml(roomItem.area)}` : ""}</p>
         </div>
-        <span class="pill ${stayItem ? "warning" : roomItem.active ? "" : "pending"}">${stayItem ? "Occupied" : roomItem.active ? "Available" : "Inactive"}</span>
+        <span class="pill ${stayItem ? "warning" : roomItem.active ? "" : "pending"}">${stayItem ? "Occupee" : roomItem.active ? "Libre" : "Fermee"}</span>
       </div>
       <div class="pill-row">
-        ${roomItem.bathroom ? '<span class="pill">Private bathroom</span>' : '<span class="pill">Shared bathroom</span>'}
+        ${roomItem.bathroom ? '<span class="pill">Salle de bain privee</span>' : '<span class="pill">Salle de bain partagee</span>'}
         ${stayItem ? `<span class="pill">${escapeHtml(stayItem.guestName)}</span>` : ""}
       </div>
-      <p class="muted">${escapeHtml(roomItem.notes || "No room notes")}</p>
+      <p class="muted">${escapeHtml(roomItem.notes || "Aucune note")}</p>
       <div class="button-row" ${canEdit ? "" : "hidden"}>
-        <button class="mini-button secondary-action" type="button" data-edit-room="${roomItem.id}">Edit</button>
-        <button class="mini-button secondary-action" type="button" data-toggle-room="${roomItem.id}">${roomItem.active ? "Set inactive" : "Set active"}</button>
+        <button class="mini-button secondary-action" type="button" data-edit-room="${roomItem.id}">Modifier</button>
+        <button class="mini-button secondary-action" type="button" data-toggle-room="${roomItem.id}">${roomItem.active ? "Fermer" : "Rouvrir"}</button>
       </div>
     `;
     els.roomsList.append(card);
@@ -248,7 +257,7 @@ function renderStays() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><strong>${escapeHtml(stayItem.guestName)}</strong></td>
-      <td>${escapeHtml(roomItem?.name || "Room removed")}</td>
+      <td>${escapeHtml(roomItem?.name || "Chambre supprimee")}</td>
       <td>${formatDate(stayItem.checkIn)} - ${formatDate(stayItem.checkOut)}</td>
       <td>${stayItem.guests}</td>
       <td><span class="pill ${statusClass(stayItem.status)}">${escapeHtml(statusLabel(stayItem.status))}</span></td>
@@ -256,8 +265,8 @@ function renderStays() {
       <td>${escapeHtml(stayItem.notes || "-")}</td>
       <td>
         <div class="button-row" ${canEdit ? "" : "hidden"}>
-          <button class="mini-button secondary-action" type="button" data-edit-stay="${stayItem.id}">Edit</button>
-          <button class="mini-button secondary-action" type="button" data-cancel-stay="${stayItem.id}">Cancel</button>
+          <button class="mini-button secondary-action" type="button" data-edit-stay="${stayItem.id}">Modifier</button>
+          <button class="mini-button secondary-action" type="button" data-cancel-stay="${stayItem.id}">Annuler</button>
         </div>
       </td>
     `;
@@ -284,20 +293,20 @@ function renderMonthlyOccupancy() {
   const grid = document.createElement("div");
   grid.className = "month-grid";
   grid.style.setProperty("--days", days.length);
-  grid.append(monthCell("Room", "month-head sticky-room"));
+  grid.append(monthCell("Chambre", "month-head sticky-room"));
   days.forEach((day) => {
     grid.append(monthCell(String(new Date(`${day}T00:00`).getDate()), `month-head ${day === isoDate ? "today" : ""}`, shortWeekday(day)));
   });
 
   rooms.forEach((roomItem) => {
-    grid.append(monthCell(roomItem.name, "month-room sticky-room", `${roomItem.type} | ${roomItem.beds} bed${roomItem.beds === 1 ? "" : "s"}`));
+    grid.append(monthCell(roomItem.name, "month-room sticky-room", `${roomItem.type} | ${roomItem.beds} lit${roomItem.beds === 1 ? "" : "s"}`));
     days.forEach((day) => {
       const stayItem = stayForRoomOnDate(roomItem.id, day);
       const classes = ["month-cell"];
       if (stayItem) classes.push("occupied");
       if (day === isoDate) classes.push("today");
       const label = stayItem ? stayItem.guestName : "";
-      const meta = stayItem ? `${statusLabel(stayItem.status)} | ${stayItem.guests} people` : "";
+      const meta = stayItem ? `${statusLabel(stayItem.status)} | ${stayItem.guests} pers.` : "";
       grid.append(monthCell(label, classes.join(" "), meta, stayItem?.id));
     });
   });
@@ -341,11 +350,10 @@ function shortWeekday(day) {
 function renderDataSummary() {
   els.dataSummary.innerHTML = "";
   [
-    ["Rooms", `${state.rooms.length} total, ${activeRooms().length} bookable`],
-    ["Stays", `${state.stays.length} saved stays`],
-    ["Storage", dataMode === "true" ? "True data changes are saved in this browser and synced when signed in" : "Demo data is fictive and view-only"],
-    ["Account sync", authSession ? "On" : "Sign in to sync"],
-    ["Account", authSession?.user?.email || "Not signed in"]
+    ["Chambres", `${state.rooms.length} au total, ${activeRooms().length} ouvertes`],
+    ["Sejours", `${state.stays.length} enregistres`],
+    ["Mode", dataMode === "true" ? "Donnees reelles" : "Demo fictive"],
+    ["Compte", authSession?.user?.email || "Non connecte"]
   ].forEach(([title, body]) => {
     const card = document.createElement("article");
     card.className = "report-card";
@@ -357,22 +365,23 @@ function renderDataSummary() {
 function hydrateAccountControls() {
   els.accountEmail.value = authSession?.user?.email || els.accountEmail.value || "";
   els.signOut.disabled = !authSession;
-  els.accountFeedback.textContent = authSession?.user?.email ? `Signed in as ${authSession.user.email}.` : "Sign in to sync private room data across devices.";
+  els.accountStatus.textContent = authSession ? "Connecte" : "Non connecte";
+  els.accountFeedback.textContent = authSession?.user?.email ? `Connecte : ${authSession.user.email}.` : "Connexion requise pour retrouver les donnees sur plusieurs appareils.";
 }
 
 async function loadSharedData() {
   if (!authSession) {
-    els.accountFeedback.textContent = "Sign in before loading shared data.";
+    els.accountFeedback.textContent = "Connectez-vous pour charger les donnees.";
     return;
   }
   try {
     const response = await fetch("/api/data", {
       headers: authHeaders()
     });
-    if (!response.ok) throw new Error(`Load failed (${response.status})`);
+    if (!response.ok) throw new Error(await responseMessage(response, "Chargement impossible."));
     const result = await response.json();
     if (!result.data) {
-      els.accountFeedback.textContent = "No shared data yet. Your next true-data change will create it.";
+      els.accountFeedback.textContent = "Aucune donnee en ligne pour ce compte.";
       return;
     }
     state = normalizeData(result.data);
@@ -380,19 +389,19 @@ async function loadSharedData() {
     localStorage.setItem(DATA_MODE_KEY, "true");
     localStorage.setItem(TRUE_DATA_KEY, JSON.stringify(state));
     render();
-    els.accountFeedback.textContent = `Loaded shared data for ${authSession.user.email}.`;
+    els.accountFeedback.textContent = `Donnees chargees pour ${authSession.user.email}.`;
   } catch (error) {
-    els.accountFeedback.textContent = error.message || "Shared data load failed.";
+    els.accountFeedback.textContent = error.message || "Chargement impossible.";
   }
 }
 
 async function saveSharedData(showMessage = false) {
   if (dataMode !== "true") {
-    if (showMessage) els.accountFeedback.textContent = "Switch to True data before saving shared data.";
+    if (showMessage) els.accountFeedback.textContent = "Passez en mode Reel avant de sauvegarder.";
     return;
   }
   if (!authSession) {
-    if (showMessage) els.accountFeedback.textContent = "Sign in before saving shared data.";
+    if (showMessage) els.accountFeedback.textContent = "Connectez-vous avant de sauvegarder.";
     return;
   }
   try {
@@ -404,10 +413,10 @@ async function saveSharedData(showMessage = false) {
       },
       body: JSON.stringify({ data: normalizeData(state) })
     });
-    if (!response.ok) throw new Error(`Save failed (${response.status})`);
-    els.accountFeedback.textContent = `Shared data saved at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
+    if (!response.ok) throw new Error(await responseMessage(response, "Sauvegarde impossible."));
+    els.accountFeedback.textContent = `Sauvegarde faite a ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
   } catch (error) {
-    els.accountFeedback.textContent = error.message || "Shared data save failed.";
+    els.accountFeedback.textContent = error.message || "Sauvegarde impossible.";
   }
 }
 
@@ -428,18 +437,18 @@ async function signInWithEmail(event) {
   const email = els.accountEmail.value.trim();
   const password = els.accountPassword.value;
   if (!email || !password) {
-    els.accountFeedback.textContent = "Email and password are required.";
+    els.accountFeedback.textContent = "Email et mot de passe requis.";
     return;
   }
   try {
     const session = await authRequest("signin", { email, password });
     setAuthSession(session);
     els.accountPassword.value = "";
-    els.accountFeedback.textContent = `Signed in as ${session.user.email}.`;
+    els.accountFeedback.textContent = `Connecte : ${session.user.email}.`;
     await loadSharedData();
     render();
   } catch (error) {
-    els.accountFeedback.textContent = error.message || "Sign in failed.";
+    els.accountFeedback.textContent = error.message || "Connexion impossible.";
   }
 }
 
@@ -447,18 +456,18 @@ async function signUpWithEmail() {
   const email = els.accountEmail.value.trim();
   const password = els.accountPassword.value;
   if (!email || !password) {
-    els.accountFeedback.textContent = "Email and password are required.";
+    els.accountFeedback.textContent = "Email et mot de passe requis.";
     return;
   }
   try {
     const session = await authRequest("signup", { email, password });
     setAuthSession(session);
     els.accountPassword.value = "";
-    els.accountFeedback.textContent = `Account created for ${session.user.email}.`;
+    els.accountFeedback.textContent = `Compte cree : ${session.user.email}.`;
     await saveSharedData(false);
     render();
   } catch (error) {
-    els.accountFeedback.textContent = error.message || "Create account failed.";
+    els.accountFeedback.textContent = error.message || "Creation impossible.";
   }
 }
 
@@ -466,7 +475,7 @@ function signOut() {
   authSession = null;
   localStorage.removeItem(AUTH_SESSION_KEY);
   els.accountPassword.value = "";
-  els.accountFeedback.textContent = "Signed out.";
+  els.accountFeedback.textContent = "Deconnecte.";
   render();
 }
 
@@ -485,9 +494,14 @@ async function authRequest(action, body) {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(result.message || `Auth failed (${response.status})`);
+    throw new Error(result.message || `Connexion impossible (${response.status})`);
   }
   return result;
+}
+
+async function responseMessage(response, fallback) {
+  const result = await response.json().catch(() => ({}));
+  return result.message || `${fallback} (${response.status})`;
 }
 
 function saveRoom(event) {
@@ -504,7 +518,7 @@ function saveRoom(event) {
     els.roomNotes.value.trim()
   );
   if (!current.name) {
-    els.roomFeedback.textContent = "Room name is required.";
+    els.roomFeedback.textContent = "Le nom ou numero de chambre est requis.";
     return;
   }
   state.rooms = state.rooms.filter((item) => item.id !== current.id);
@@ -512,13 +526,14 @@ function saveRoom(event) {
   persistTrueData();
   clearRoomForm();
   render();
+  els.roomFeedback.textContent = "Chambre enregistree.";
 }
 
 function saveStay(event) {
   event.preventDefault();
   if (!canEditTrueData(els.stayFeedback)) return;
   if (!activeRooms().length) {
-    els.stayFeedback.textContent = "Add at least one active room first.";
+    els.stayFeedback.textContent = "Ajoutez d'abord une chambre disponible.";
     return;
   }
   const current = stay(
@@ -533,15 +548,15 @@ function saveStay(event) {
     els.stayNotes.value.trim()
   );
   if (!current.guestName) {
-    els.stayFeedback.textContent = "Guest name is required.";
+    els.stayFeedback.textContent = "Le nom est requis.";
     return;
   }
   if (new Date(current.checkOut) <= new Date(current.checkIn)) {
-    els.stayFeedback.textContent = "Check-out must be after check-in.";
+    els.stayFeedback.textContent = "Le depart doit etre apres l'arrivee.";
     return;
   }
   if (hasRoomConflict(current, state.stays.filter((item) => item.id !== current.id))) {
-    els.stayFeedback.textContent = "That room is already booked for these dates.";
+    els.stayFeedback.textContent = "Cette chambre est deja reservee sur ces dates.";
     return;
   }
   state.stays = state.stays.filter((item) => item.id !== current.id);
@@ -549,6 +564,7 @@ function saveStay(event) {
   persistTrueData();
   clearStayForm();
   render();
+  els.stayFeedback.textContent = "Sejour enregistre.";
 }
 
 function editRoom(id) {
@@ -563,6 +579,7 @@ function editRoom(id) {
   els.roomBathroom.checked = roomItem.bathroom;
   els.roomActive.checked = roomItem.active;
   els.roomNotes.value = roomItem.notes;
+  openEntryPanel(els.roomPanel, els.roomName);
   els.roomName.focus();
 }
 
@@ -579,6 +596,7 @@ function editStay(id) {
   els.stayStatus.value = stayItem.status;
   els.guestContact.value = stayItem.contact;
   els.stayNotes.value = stayItem.notes;
+  openEntryPanel(els.stayPanel, els.guestName);
   els.guestName.focus();
 }
 
@@ -625,7 +643,7 @@ function switchDataMode(mode) {
   clearRoomForm();
   clearStayForm();
   render();
-  els.dataFeedback.textContent = mode === "demo" ? "Demo mode shows fictive sample rooms and stays." : "True data mode is active. Add rooms and stays here.";
+  els.dataFeedback.textContent = mode === "demo" ? "Mode demo : donnees fictives." : "Mode reel : les changements sont sauvegardes.";
 }
 
 function updateModeButtons() {
@@ -634,13 +652,13 @@ function updateModeButtons() {
   els.trueDataMode.classList.toggle("active", !isDemo);
   els.demoMode.classList.toggle("secondary-action", !isDemo);
   els.trueDataMode.classList.toggle("secondary-action", isDemo);
-  els.dataModeLabel.textContent = isDemo ? "Demo data" : "True data";
+  els.dataModeLabel.textContent = isDemo ? "Demo" : "Reel";
 }
 
 function exportTrueData() {
   const data = dataMode === "true" ? state : loadTrueData();
   download("kagyu-samye-ling-room-data.json", JSON.stringify(normalizeData(data), null, 2), "application/json");
-  els.dataFeedback.textContent = "True data exported.";
+  els.dataFeedback.textContent = "Export termine.";
 }
 
 function importTrueData(event) {
@@ -655,9 +673,9 @@ function importTrueData(event) {
       localStorage.setItem(DATA_MODE_KEY, "true");
       state = imported;
       render();
-      els.dataFeedback.textContent = "True data imported.";
+      els.dataFeedback.textContent = "Import termine.";
     } catch {
-      els.dataFeedback.textContent = "Import failed. Please use a JSON export from this app.";
+      els.dataFeedback.textContent = "Import impossible. Utilisez un export JSON de cette app.";
     } finally {
       event.target.value = "";
     }
@@ -674,29 +692,29 @@ function resetTrueData() {
     clearStayForm();
     render();
   }
-  els.dataFeedback.textContent = "True data reset. Demo data is unchanged.";
+  els.dataFeedback.textContent = "Donnees reinitialisees.";
 }
 
 function exportStaysCsv() {
   const rows = state.stays.map((stayItem) => {
     const roomItem = roomById(stayItem.roomId);
     return {
-      Guest: stayItem.guestName,
-      Room: roomItem?.name || "Room removed",
-      CheckIn: stayItem.checkIn,
-      CheckOut: stayItem.checkOut,
-      People: stayItem.guests,
-      Status: statusLabel(stayItem.status),
+      Nom: stayItem.guestName,
+      Chambre: roomItem?.name || "Chambre supprimee",
+      Arrivee: stayItem.checkIn,
+      Depart: stayItem.checkOut,
+      Personnes: stayItem.guests,
+      Statut: statusLabel(stayItem.status),
       Contact: stayItem.contact,
       Notes: stayItem.notes
     };
   });
-  download(`room-stays-${els.activeDate.value}.csv`, toCsv(rows), "text/csv");
+  download(`sejours-${els.activeDate.value}.csv`, toCsv(rows), "text/csv");
 }
 
 function canEditTrueData(feedbackEl) {
   if (dataMode === "true") return true;
-  feedbackEl.textContent = "Switch to True data to edit.";
+  feedbackEl.textContent = "Passez en mode Reel pour modifier.";
   return false;
 }
 
@@ -761,7 +779,12 @@ function roomLabel(roomItem) {
 }
 
 function statusLabel(status) {
-  return status.split("-").map((part) => titleCase(part)).join(" ");
+  return {
+    "confirmed": "Confirme",
+    "checked-in": "Arrive",
+    "checked-out": "Parti",
+    "cancelled": "Annule"
+  }[status] || titleCase(status);
 }
 
 function statusClass(status) {

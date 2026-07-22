@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,20 +11,25 @@
       <div>
         <p class="eyebrow">Kagyu Samye Ling</p>
         <h1>Les Jardins de Meditation</h1>
-        <p class="subtitle">Sleeping rooms and guest stays</p>
+        <p class="subtitle">Gestion simple des chambres et des sejours</p>
       </div>
       <div class="topbar-actions">
+        <div class="quick-actions" aria-label="Actions rapides">
+          <button id="quickAddStay" type="button">Nouveau sejour</button>
+          <button id="quickAddRoom" class="secondary-action" type="button">Ajouter chambre</button>
+        </div>
         <div class="mode-switch" aria-label="Data mode">
           <button id="demoMode" class="secondary-action" type="button">Demo</button>
-          <button id="trueDataMode" type="button">True data</button>
+          <button id="trueDataMode" type="button">Reel</button>
         </div>
         <label class="field compact">
-          <span>Date</span>
+          <span>Jour</span>
           <input id="activeDate" type="date">
         </label>
         <div class="mode-note">
-          <span id="dataModeLabel">True data</span>
+          <span id="dataModeLabel">Reel</span>
         </div>
+        <div id="accountStatus" class="mode-note">Non connecte</div>
       </div>
     </header>
 
@@ -32,19 +37,19 @@
       <section class="summary-band" aria-label="Daily room summary">
         <article>
           <span id="roomCount">0</span>
-          <p>rooms</p>
+          <p>chambres</p>
         </article>
         <article>
           <span id="occupiedCount">0</span>
-          <p>occupied tonight</p>
+          <p>occupees ce soir</p>
         </article>
         <article>
           <span id="availableCount">0</span>
-          <p>available tonight</p>
+          <p>libres ce soir</p>
         </article>
         <article>
           <span id="arrivalCount">0</span>
-          <p>arrivals today</p>
+          <p>arrivees aujourd'hui</p>
         </article>
       </section>
 
@@ -53,15 +58,15 @@
           <section aria-labelledby="roomsTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Rooms</p>
-                <h2 id="roomsTitle">Sleeping Rooms</h2>
+                <p class="eyebrow">Chambres</p>
+                <h2 id="roomsTitle">Vue du jour</h2>
               </div>
               <div class="toolbar">
-                <input id="searchInput" type="search" placeholder="Search room, guest, notes">
-                <select id="roomStatusFilter" aria-label="Room status filter">
-                  <option value="all">All rooms</option>
-                  <option value="available">Available</option>
-                  <option value="occupied">Occupied</option>
+                <input id="searchInput" type="search" placeholder="Rechercher chambre, personne, note">
+                <select id="roomStatusFilter" aria-label="Filtre chambres">
+                  <option value="all">Toutes</option>
+                  <option value="available">Libres</option>
+                  <option value="occupied">Occupees</option>
                 </select>
               </div>
             </div>
@@ -72,15 +77,15 @@
             <div class="section-heading">
               <div>
                 <p class="eyebrow">Planning</p>
-                <h2 id="monthTitle">Occupation Mensuelle</h2>
+                <h2 id="monthTitle">Occupation mensuelle</h2>
               </div>
               <div class="toolbar">
-                <button id="prevMonth" class="secondary-action" type="button">Previous</button>
+                <button id="prevMonth" class="secondary-action" type="button">Mois precedent</button>
                 <label class="field compact">
-                  <span>Month</span>
+                  <span>Mois</span>
                   <input id="monthPicker" type="month">
                 </label>
-                <button id="nextMonth" class="secondary-action" type="button">Next</button>
+                <button id="nextMonth" class="secondary-action" type="button">Mois suivant</button>
               </div>
             </div>
             <div id="monthlyOccupancy" class="month-grid-wrap"></div>
@@ -89,30 +94,30 @@
           <section aria-labelledby="staysTitle">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Bookings</p>
-                <h2 id="staysTitle">Guest Stays</h2>
+                <p class="eyebrow">Reservations</p>
+                <h2 id="staysTitle">Sejours</h2>
               </div>
               <div class="toolbar">
-                <select id="stayStatusFilter" aria-label="Stay status filter">
-                  <option value="all">All stays</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="checked-in">Checked in</option>
-                  <option value="checked-out">Checked out</option>
-                  <option value="cancelled">Cancelled</option>
+                <select id="stayStatusFilter" aria-label="Filtre sejours">
+                  <option value="all">Tous</option>
+                  <option value="confirmed">Confirme</option>
+                  <option value="checked-in">Arrive</option>
+                  <option value="checked-out">Parti</option>
+                  <option value="cancelled">Annule</option>
                 </select>
                 <button id="exportCsv" class="secondary-action" type="button">Export CSV</button>
-                <button id="printSheet" class="secondary-action" type="button">Print sheet</button>
+                <button id="printSheet" class="secondary-action" type="button">Imprimer</button>
               </div>
             </div>
             <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Guest</th>
-                    <th>Room</th>
+                    <th>Personne</th>
+                    <th>Chambre</th>
                     <th>Dates</th>
-                    <th>People</th>
-                    <th>Status</th>
+                    <th>Nb</th>
+                    <th>Statut</th>
                     <th>Contact</th>
                     <th>Notes</th>
                     <th></th>
@@ -125,166 +130,174 @@
         </div>
 
         <aside class="side-stack" aria-label="Data entry">
-          <section aria-labelledby="quickStayTitle">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Add</p>
-                <h2 id="quickStayTitle">New Stay</h2>
-              </div>
-            </div>
-            <form id="stayForm" class="form-grid">
-              <input id="stayId" type="hidden">
-              <label class="field">
-                <span>Guest name</span>
-                <input id="guestName" required placeholder="Guest or family name">
-              </label>
-              <label class="field">
-                <span>Room</span>
-                <select id="stayRoom" required></select>
-              </label>
-              <div class="two-col">
+          <section aria-labelledby="quickStayTitle" id="stayPanel">
+            <details class="entry-details" open>
+              <summary class="section-heading">
+                <div>
+                  <p class="eyebrow">Saisie</p>
+                  <h2 id="quickStayTitle">Nouveau sejour</h2>
+                </div>
+              </summary>
+              <form id="stayForm" class="form-grid">
+                <input id="stayId" type="hidden">
                 <label class="field">
-                  <span>Check-in</span>
-                  <input id="checkIn" type="date" required>
+                  <span>Nom</span>
+                  <input id="guestName" required placeholder="Nom de la personne ou du groupe">
                 </label>
                 <label class="field">
-                  <span>Check-out</span>
-                  <input id="checkOut" type="date" required>
+                  <span>Chambre</span>
+                  <select id="stayRoom" required></select>
                 </label>
-              </div>
-              <div class="two-col">
+                <div class="two-col">
+                  <label class="field">
+                    <span>Arrivee</span>
+                    <input id="checkIn" type="date" required>
+                  </label>
+                  <label class="field">
+                    <span>Depart</span>
+                    <input id="checkOut" type="date" required>
+                  </label>
+                </div>
+                <div class="two-col">
+                  <label class="field">
+                    <span>Personnes</span>
+                    <input id="guestCount" type="number" min="1" value="1">
+                  </label>
+                  <label class="field">
+                    <span>Statut</span>
+                    <select id="stayStatus">
+                      <option value="confirmed">Confirme</option>
+                      <option value="checked-in">Arrive</option>
+                      <option value="checked-out">Parti</option>
+                      <option value="cancelled">Annule</option>
+                    </select>
+                  </label>
+                </div>
                 <label class="field">
-                  <span>People</span>
-                  <input id="guestCount" type="number" min="1" value="1">
+                  <span>Contact</span>
+                  <input id="guestContact" placeholder="Telephone ou email">
                 </label>
                 <label class="field">
-                  <span>Status</span>
-                  <select id="stayStatus">
-                    <option value="confirmed">Confirmed</option>
-                    <option value="checked-in">Checked in</option>
-                    <option value="checked-out">Checked out</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                  <span>Notes</span>
+                  <textarea id="stayNotes" rows="3" placeholder="Repas, accessibilite, retraite, paiement"></textarea>
                 </label>
-              </div>
-              <label class="field">
-                <span>Contact</span>
-                <input id="guestContact" placeholder="Phone or email">
-              </label>
-              <label class="field">
-                <span>Notes</span>
-                <textarea id="stayNotes" rows="3" placeholder="Diet, accessibility, retreat group, payment note"></textarea>
-              </label>
-              <div id="stayFeedback" class="form-feedback" aria-live="polite"></div>
-              <div class="button-row">
-                <button type="submit">Save stay</button>
-                <button id="clearStay" class="secondary-action" type="button">Clear</button>
-              </div>
-            </form>
+                <div id="stayFeedback" class="form-feedback" aria-live="polite"></div>
+                <div class="button-row">
+                  <button type="submit">Enregistrer</button>
+                  <button id="clearStay" class="secondary-action" type="button">Vider</button>
+                </div>
+              </form>
+            </details>
           </section>
 
-          <section aria-labelledby="quickRoomTitle">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Add</p>
-                <h2 id="quickRoomTitle">New Room</h2>
-              </div>
-            </div>
-            <form id="roomForm" class="form-grid">
-              <input id="roomId" type="hidden">
-              <div class="two-col">
-                <label class="field">
-                  <span>Room name/number</span>
-                  <input id="roomName" required placeholder="Room 12">
+          <section aria-labelledby="quickRoomTitle" id="roomPanel">
+            <details class="entry-details">
+              <summary class="section-heading">
+                <div>
+                  <p class="eyebrow">Chambres</p>
+                  <h2 id="quickRoomTitle">Ajouter une chambre</h2>
+                </div>
+              </summary>
+              <form id="roomForm" class="form-grid">
+                <input id="roomId" type="hidden">
+                <div class="two-col">
+                  <label class="field">
+                    <span>Numero ou nom</span>
+                    <input id="roomName" required placeholder="Chambre 12">
+                  </label>
+                  <label class="field">
+                    <span>Lits</span>
+                    <input id="roomBeds" type="number" min="1" value="1">
+                  </label>
+                </div>
+                <div class="two-col">
+                  <label class="field">
+                    <span>Type</span>
+                    <select id="roomType">
+                      <option>Single</option>
+                      <option>Twin</option>
+                      <option>Double</option>
+                      <option>Dormitory</option>
+                      <option>Family</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Batiment</span>
+                    <input id="roomArea" placeholder="Maison principale, aile jardin">
+                  </label>
+                </div>
+                <label class="checkline">
+                  <input id="roomBathroom" type="checkbox">
+                  <span>Salle de bain privee</span>
+                </label>
+                <label class="checkline">
+                  <input id="roomActive" type="checkbox" checked>
+                  <span>Disponible a la reservation</span>
                 </label>
                 <label class="field">
-                  <span>Beds</span>
-                  <input id="roomBeds" type="number" min="1" value="1">
+                  <span>Notes chambre</span>
+                  <textarea id="roomNotes" rows="3" placeholder="Calme, escaliers, accessible, proche jardin"></textarea>
                 </label>
-              </div>
-              <div class="two-col">
-                <label class="field">
-                  <span>Type</span>
-                  <select id="roomType">
-                    <option>Single</option>
-                    <option>Twin</option>
-                    <option>Double</option>
-                    <option>Dormitory</option>
-                    <option>Family</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>Area</span>
-                  <input id="roomArea" placeholder="Main house, garden wing">
-                </label>
-              </div>
-              <label class="checkline">
-                <input id="roomBathroom" type="checkbox">
-                <span>Private bathroom</span>
-              </label>
-              <label class="checkline">
-                <input id="roomActive" type="checkbox" checked>
-                <span>Available for booking</span>
-              </label>
-              <label class="field">
-                <span>Room notes</span>
-                <textarea id="roomNotes" rows="3" placeholder="Quiet room, stairs, accessible, near garden"></textarea>
-              </label>
-              <div id="roomFeedback" class="form-feedback" aria-live="polite"></div>
-              <div class="button-row">
-                <button type="submit">Save room</button>
-                <button id="clearRoom" class="secondary-action" type="button">Clear</button>
-              </div>
-            </form>
-          </section>
-
-          <section aria-labelledby="dataTitle">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Data</p>
-                <h2 id="dataTitle">True Data</h2>
-              </div>
-            </div>
-            <div class="data-actions">
-              <button id="exportData" class="secondary-action" type="button">Export JSON</button>
-              <button id="importData" class="secondary-action" type="button">Import JSON</button>
-              <button id="resetTrueData" class="secondary-action" type="button">Reset</button>
-              <input id="importDataFile" type="file" accept="application/json,.json" hidden>
-            </div>
-            <div id="dataFeedback" class="form-feedback" aria-live="polite"></div>
-            <div id="dataSummary" class="report-list"></div>
+                <div id="roomFeedback" class="form-feedback" aria-live="polite"></div>
+                <div class="button-row">
+                  <button type="submit">Enregistrer</button>
+                  <button id="clearRoom" class="secondary-action" type="button">Vider</button>
+                </div>
+              </form>
+            </details>
           </section>
 
           <section aria-labelledby="accountTitle">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Account</p>
-                <h2 id="accountTitle">User Account</h2>
-              </div>
-            </div>
-            <form id="accountForm" class="form-grid">
-              <label class="field">
-                <span>Email</span>
-                <input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com">
-              </label>
-              <label class="field">
-                <span>Password</span>
-                <input id="accountPassword" type="password" autocomplete="current-password" placeholder="Password">
-              </label>
+            <details class="entry-details" open>
+              <summary class="section-heading">
+                <div>
+                  <p class="eyebrow">Compte</p>
+                  <h2 id="accountTitle">Connexion</h2>
+                </div>
+              </summary>
+              <form id="accountForm" class="form-grid">
+                <label class="field">
+                  <span>Email</span>
+                  <input id="accountEmail" type="email" autocomplete="email" placeholder="vous@example.com">
+                </label>
+                <label class="field">
+                  <span>Mot de passe</span>
+                  <input id="accountPassword" type="password" autocomplete="current-password" placeholder="Minimum 8 caracteres">
+                </label>
+                <div class="data-actions">
+                  <button id="signIn" type="submit">Se connecter</button>
+                  <button id="signUp" class="secondary-action" type="button">Creer compte</button>
+                  <button id="signOut" class="secondary-action" type="button">Deconnexion</button>
+                </div>
+              </form>
+              <div id="accountFeedback" class="form-feedback neutral" aria-live="polite"></div>
+            </details>
+          </section>
+
+          <section aria-labelledby="dataTitle">
+            <details class="entry-details">
+              <summary class="section-heading">
+                <div>
+                  <p class="eyebrow">Donnees</p>
+                  <h2 id="dataTitle">Sauvegarde</h2>
+                </div>
+              </summary>
               <div class="data-actions">
-                <button id="signIn" type="submit">Sign in</button>
-                <button id="signUp" class="secondary-action" type="button">Create account</button>
-                <button id="signOut" class="secondary-action" type="button">Sign out</button>
+                <button id="exportData" class="secondary-action" type="button">Exporter JSON</button>
+                <button id="importData" class="secondary-action" type="button">Importer JSON</button>
+                <button id="resetTrueData" class="secondary-action" type="button">Reinitialiser</button>
+                <input id="importDataFile" type="file" accept="application/json,.json" hidden>
               </div>
-            </form>
-            <div id="accountFeedback" class="form-feedback" aria-live="polite"></div>
+              <div id="dataFeedback" class="form-feedback neutral" aria-live="polite"></div>
+              <div id="dataSummary" class="report-list compact-list"></div>
+            </details>
           </section>
         </aside>
       </section>
     </main>
 
     <template id="emptyStateTemplate">
-      <div class="empty-state">No matching records yet.</div>
+      <div class="empty-state">Aucun resultat pour le moment.</div>
     </template>
 
     <script src="app.js"></script>
